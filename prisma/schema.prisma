@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  fullName  String?
+  role      String   @default("user")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  misFiles       MisFile[]
+  invoiceBatches InvoiceBatch[]
+}
+
+model Company {
+  id            String   @id @default(cuid())
+  name          String
+  gstNumber     String?
+  panNumber     String?
+  sacHsnCode    String?
+  address       String?
+  state         String?
+  contactPerson String?
+  contactEmail  String?
+  contactPhone  String?
+  logoPath      String?
+  headerPath    String?
+  footerPath    String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  invoiceBatches InvoiceBatch[]
+}
+
+model Bank {
+  id           String   @id @default(cuid())
+  bankName     String
+  branch       String
+  address      String?
+  gstNumber    String?
+  geoCoords    String?
+  bmRep        String?
+  phone        String?
+  email        String?
+  companyId    String?
+  templateType String   @default("standard")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  templates BankTemplate[]
+
+  @@unique([bankName, branch])
+}
+
+model BankTemplate {
+  id              String   @id @default(cuid())
+  bankId          String
+  bank            Bank     @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  templateType    String   @default("pdf")
+  filePath        String
+  fileName        String
+  docClassifier   String?
+  azureModelId    String?
+  extractedFields String?
+  isActive        Boolean  @default(true)
+  uploadedBy      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model MisFile {
+  id          String   @id @default(cuid())
+  fileName    String
+  filePath    String
+  fileSize    Int
+  recordCount Int      @default(0)
+  fileType    String   @default("xlsx")
+  reportType  String   @default("Monthly MIS")
+  notes       String?
+  status      String   @default("uploaded")
+  uploadedBy  String
+  user        User     @relation(fields: [uploadedBy], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  records MisRecord[]
+}
+
+model MisRecord {
+  id                String   @id @default(cuid())
+  misFileId         String
+  misFile           MisFile  @relation(fields: [misFileId], references: [id], onDelete: Cascade)
+  sNo               Int?
+  eepacRefNo        String?
+  appRefNo          String?
+  bankRefNo         String?
+  additionalBankRef String?
+  applicantName     String?
+  address           String?
+  city              String?
+  state             String?
+  pinCode           String?
+  caseType          String?
+  bankName          String?
+  customerContact   String?
+  branch            String?
+  rmContact         String?
+  initiationDate    String?
+  time              String?
+  initiatedBy       String?
+  visitDone         String?
+  visitDate         String?
+  reportSent        String?
+  status1           String?
+  status2           String?
+  status3           String?
+  status4           String?
+  visitDoneBy       String?
+  followUpDate      String?
+  specialFee        Float?
+  serviceLocation   String?
+  branch1           String?
+  month             String?
+  nameOfBankFi      String?
+  status            String?
+  rate              Float?
+  distance          Float?
+  conveyance        Float?
+  additionalFee     Float?
+  total             Float?
+  billSent          String?
+  amountReceived    Float?
+  address1          String?
+  rowIndex          Int      @default(0)
+  createdAt         DateTime @default(now())
+}
+
+model InvoiceBatch {
+  id             String   @id @default(cuid())
+  invoiceNo      String   @unique
+  companyId      String
+  company        Company  @relation(fields: [companyId], references: [id])
+  generatedBy    String
+  user           User     @relation(fields: [generatedBy], references: [id])
+  outputFormat   String   @default("pdf")
+  filterBank     String?
+  filterBranch   String?
+  filterCaseType String?
+  filterStatus   String?
+  filterDateFrom String?
+  filterDateTo   String?
+  recordCount    Int      @default(0)
+  totalAmount    Float    @default(0)
+  zipPath        String?
+  status         String   @default("generated")
+  includeLogo    Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  invoiceFiles InvoiceFile[]
+}
+
+model InvoiceFile {
+  id        String       @id @default(cuid())
+  batchId   String
+  batch     InvoiceBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  bankName  String?
+  branch    String?
+  format    String       @default("pdf")
+  fileName  String
+  filePath  String
+  createdAt DateTime     @default(now())
+}
