@@ -9,15 +9,20 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const data = await req.json();
+    const { name, address, gstNumber, panNumber, email, contactEmail, bankDetails } = await req.json();
 
-    if (!data.name || !data.gstNumber || !data.address) {
+    if (!name || !gstNumber || !address) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     const company = await prisma.company.create({
       data: {
-        ...data,
+        name,
+        address,
+        gstNumber,
+        panNumber,
+        contactEmail: contactEmail || email,
+        bankDetails,
         isActive: true,
       },
     });

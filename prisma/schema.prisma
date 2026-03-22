@@ -33,6 +33,7 @@ model Company {
   contactPerson String?
   contactEmail  String?
   contactPhone  String?
+  bankDetails   String?
   logoPath      String?
   headerPath    String?
   footerPath    String?

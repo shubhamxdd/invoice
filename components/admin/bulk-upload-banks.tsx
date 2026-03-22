@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, FileText, CheckCircle2, AlertCircle, X, Loader2, Download, Table as TableIcon } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, X, Loader2, Download, Table as TableIcon, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

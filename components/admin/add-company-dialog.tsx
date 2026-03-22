@@ -28,7 +28,7 @@ export function AddCompanyDialog() {
     address: "",
     gstNumber: "",
     panNumber: "",
-    email: "",
+    contactEmail: "",
     bankDetails: "",
   });
 
@@ -47,7 +47,7 @@ export function AddCompanyDialog() {
 
       toast.success("Company profile registered successfully!");
       setIsOpen(false);
-      setFormData({ name: "", address: "", gstNumber: "", panNumber: "", email: "", bankDetails: "" });
+      setFormData({ name: "", address: "", gstNumber: "", panNumber: "", contactEmail: "", bankDetails: "" });
       router.refresh();
     } catch (error: any) {
       toast.error(error.message);
@@ -145,8 +145,8 @@ export function AddCompanyDialog() {
                    className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm"
                    placeholder="billing@acme.com"
                    required
-                   value={formData.email}
-                   onChange={(e) => setFormData({...formData, email: e.target.value})}
+                   value={formData.contactEmail}
+                   onChange={(e) => setFormData({...formData, contactEmail: e.target.value})}
                  />
                </div>
              </div>
