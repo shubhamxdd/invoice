@@ -18,21 +18,24 @@ export function TableSearch({ placeholder, defaultValue = "" }: TableSearchProps
   const [value, setValue] = useState(defaultValue);
 
   useEffect(() => {
-    const params = new URLSearchParams(searchParams);
-    if (value) {
-      params.set("q", value);
-    } else {
-      params.delete("q");
-    }
+    const currentQ = searchParams.get("q") || "";
+    if (value === currentQ) return;
 
     const timeout = setTimeout(() => {
+      const params = new URLSearchParams(searchParams);
+      if (value) {
+        params.set("q", value);
+      } else {
+        params.delete("q");
+      }
+
       startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`);
+        router.replace(`${pathname}?${params.toString()}`);
       });
-    }, 300);
+    }, 500);
 
     return () => clearTimeout(timeout);
-  }, [value, pathname, router, searchParams]);
+  }, [value, pathname, searchParams, router]);
 
   return (
     <div className="relative flex-1 max-w-sm">
