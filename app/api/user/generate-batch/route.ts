@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import JSZip from "jszip";
 import { generateExcelInvoice, generatePdfInvoice } from "@/lib/invoice-engine";
+import fs from "fs/promises";
+import path from "path";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -17,10 +19,16 @@ export async function POST(req: NextRequest) {
     const where: any = {
       misFile: { uploadedBy: session.user.id },
     };
-    if (filters.bank !== "all") where.bankName = filters.bank;
-    if (filters.branch !== "all") where.branch = filters.branch;
-    if (filters.caseType !== "all") where.caseType = filters.caseType;
-    if (filters.status !== "all") where.status = filters.status;
+    if (filters.bank && filters.bank !== "all") where.bankName = filters.bank;
+    if (filters.branch && filters.branch !== "all") where.branch = filters.branch;
+    if (filters.caseType && filters.caseType !== "all") where.caseType = filters.caseType;
+    if (filters.status && filters.status !== "all") where.status = filters.status;
+    
+    if (filters.dateFrom || filters.dateTo) {
+      where.initiationDate = {};
+      if (filters.dateFrom) where.initiationDate.gte = filters.dateFrom;
+      if (filters.dateTo) where.initiationDate.lte = filters.dateTo;
+    }
 
     const records = await prisma.misRecord.findMany({ where });
     if (records.length === 0) return NextResponse.json({ error: "No records found matching filters" }, { status: 400 });
@@ -47,7 +55,7 @@ export async function POST(req: NextRequest) {
     const timeStr = new Date().toLocaleTimeString('en-IN', { hour12: false }).replace(/:/g, '');
     const timestamp = `${dateStr}_${timeStr}`;
 
-    const batchInvoiceNo = `INV-2024-${Math.floor(Math.random() * 899) + 100}`;
+    const batchInvoiceNo = `INV-${dateStr.replace(/-/g, '')}-${Math.floor(Math.random() * 8999) + 1000}`;
 
     // 4. Generate each group
     for (const [key, groupRecords] of Object.entries(groups)) {
@@ -62,7 +70,6 @@ export async function POST(req: NextRequest) {
       if (options.format === "pdf" || options.format === "both") {
         const pdfFilename = `${filenameBase}.pdf`;
         const pdfBuffer = await generatePdfInvoice(groupRecords, company, pdfFilename, options);
-        // bank_name/city_name/pdf/invoice_.pdf
         zip.file(`${sanitizedBank}/${sanitizedCity}/pdf/${pdfFilename}`, pdfBuffer);
       }
 
@@ -74,26 +81,35 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Save batch in database
+    const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+    
+    // 5. Save ZIP to filesystem
+    const reportDir = path.join(process.cwd(), "uploads", "invoices");
+    await fs.mkdir(reportDir, { recursive: true });
+    const zipFilename = `${batchInvoiceNo}.zip`;
+    const zipFilePath = path.join(reportDir, zipFilename);
+    await fs.writeFile(zipFilePath, zipBuffer);
+
+    // 6. Save batch in database
     const totalBatchAmount = records.reduce((sum, r) => sum + (r.total || 0), 0);
-    const invoiceBatch = await prisma.invoiceBatch.create({
+    await prisma.invoiceBatch.create({
       data: {
         invoiceNo: batchInvoiceNo,
         companyId,
         generatedBy: session.user.id!,
         outputFormat: options.format,
-        filterBank: filters.bank,
-        filterBranch: filters.branch,
+        filterBank: filters.bank !== "all" ? filters.bank : null,
+        filterBranch: filters.branch !== "all" ? filters.branch : null,
+        filterDateFrom: filters.dateFrom || null,
+        filterDateTo: filters.dateTo || null,
         totalAmount: totalBatchAmount,
         recordCount: records.length,
         status: "generated",
         includeLogo: options.includeLogo,
+        zipPath: zipFilename, // Store relative path
       },
     });
 
-    // 6. Finalize ZIP and return
-    const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
-    
     return new Response(zipBuffer, {
       status: 200,
       headers: {
