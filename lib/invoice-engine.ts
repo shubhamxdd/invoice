@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 export async function generateExcelInvoice(records: any[], company: any, filename: string, options: any) {
   const workbook = new ExcelJS.Workbook();
@@ -77,7 +77,7 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
 }
 
 export async function generatePdfInvoice(records: any[], company: any, filename: string, options: any) {
-  const doc = new jsPDF() as any;
+  const doc = new jsPDF();
   const totalAmount = records.reduce((sum, r) => sum + (r.total || 0), 0);
 
   // Header
@@ -101,7 +101,7 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
     r.total?.toLocaleString(),
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 40,
     head: [["S.No", "Applicant Name", "EEPAC Ref", "Case Type", "Rate", "Total"]],
     body: tableData,

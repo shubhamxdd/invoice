@@ -15,10 +15,13 @@ export async function GET(req: NextRequest) {
   const branch = searchParams.get("branch") || "";
   const caseType = searchParams.get("caseType") || "";
   const status = searchParams.get("status") || "";
+  const misFileId = searchParams.get("fileId") || "";
 
   const where: any = {
     misFile: { uploadedBy: session.user.id },
   };
+
+  if (misFileId) where.misFileId = misFileId;
 
   if (q) {
     where.OR = [

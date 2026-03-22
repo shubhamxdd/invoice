@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Filter, Download, ChevronLeft, ChevronRight, Loader2, Landmark, Briefcase, Info, MoreHorizontal, FileText } from "lucide-react";
+import { Search, Filter, Download, ChevronLeft, ChevronRight, Loader2, Landmark, Briefcase, Info, MoreHorizontal, FileText, TableIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,6 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 
+import { EditRecordDialog } from "./edit-record-dialog";
+
 interface MisDataPreviewProps {
   userId?: string;
 }
@@ -32,6 +34,7 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
+  const [editingRecord, setEditingRecord] = useState<any>(null);
   const [filters, setFilters] = useState({
     bank: "",
     branch: "",
@@ -75,6 +78,16 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Edit Record Dialog */}
+      {editingRecord && (
+        <EditRecordDialog 
+          record={editingRecord}
+          isOpen={!!editingRecord}
+          onOpenChange={(open) => !open && setEditingRecord(null)}
+          onSuccess={fetchRecords}
+        />
+      )}
+
       {/* Search and Filters */}
       <Card className="border-none shadow-md overflow-hidden ring-1 ring-gray-100 dark:ring-zinc-800 backdrop-blur-sm bg-white/80 dark:bg-zinc-950/80">
         <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -157,7 +170,7 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
           <Table className="min-w-[1200px]">
             <TableHeader className="bg-white/80 dark:bg-zinc-950/80 sticky top-0 border-b-2">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-12 h-10 font-bold text-gray-400 text-center text-[11px] uppercase tracking-wider">S.No</TableHead>
+                <TableHead className="w-12 h-10 font-bold text-gray-400 text-center text-[11px] uppercase tracking-wider pl-4">S.No</TableHead>
                 <TableHead className="w-[180px] h-10 font-bold text-gray-500 text-[11px] uppercase tracking-wider">Applicant Name</TableHead>
                 <TableHead className="w-[150px] h-10 font-bold text-gray-500 text-[11px] uppercase tracking-wider">EEPAC Ref</TableHead>
                 <TableHead className="h-10 font-bold text-gray-500 text-[11px] uppercase tracking-wider">Bank Name</TableHead>
@@ -166,12 +179,13 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
                 <TableHead className="h-10 font-bold text-gray-500 text-[11px] uppercase tracking-wider">Status</TableHead>
                 <TableHead className="h-10 font-bold text-gray-500 text-[11px] uppercase tracking-wider">Rate</TableHead>
                 <TableHead className="h-10 font-bold text-gray-900 dark:text-gray-100 text-[11px] uppercase tracking-widest text-right px-6">Total amt</TableHead>
+                <TableHead className="h-10 font-bold text-gray-900 dark:text-gray-100 text-[11px] uppercase tracking-widest text-right px-6 pr-8">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-64 text-center">
+                  <TableCell colSpan={10} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center space-y-3">
                       <div className="relative">
                         <div className="h-12 w-12 rounded-full border-4 border-primary/20 animate-pulse" />
@@ -183,7 +197,7 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
                 </TableRow>
               ) : records.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-64 text-center">
+                  <TableCell colSpan={10} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center space-y-4">
                       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-50 dark:bg-zinc-900 border-2 border-dashed border-gray-200">
                         <Info className="h-8 w-8 text-gray-300" />
@@ -201,41 +215,46 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
               ) : (
                 records.map((record, i) => (
                   <TableRow key={record.id} className="group border-gray-50 transition-colors hover:bg-primary/[0.02] dark:hover:bg-primary/[0.05]">
-                    <TableCell className="text-center font-bold text-[11px] text-gray-400 group-hover:text-primary transition-colors">
+                    <TableCell className="text-center font-bold text-[11px] text-gray-400 group-hover:text-primary transition-colors pl-4">
                       {(page - 1) * 10 + i + 1}
                     </TableCell>
                     <TableCell className="font-bold text-gray-900 dark:text-gray-200 pr-0">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-gray-100 dark:bg-zinc-900 flex items-center justify-center text-[10px] font-bold text-gray-500 border group-hover:bg-primary group-hover:text-white transition-all">
+                        <div className="h-8 w-8 rounded-full bg-gray-100 dark:bg-zinc-900 flex items-center justify-center text-[10px] font-bold text-gray-500 border group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
                           {(record.applicantName?.[0] || 'A').toUpperCase()}
                         </div>
-                        <span className="truncate max-w-[150px] leading-tight" title={record.applicantName || ""}>{record.applicantName || "-"}</span>
+                        <span className="truncate max-w-[150px] leading-tight font-black italic tracking-tighter" title={record.applicantName || ""}>{record.applicantName || "-"}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-[10px] font-bold tracking-wider text-gray-500">
+                    <TableCell className="font-mono text-[10px] font-semibold tracking-wider text-gray-400">
                       {record.eepacRefNo || "-"}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5 font-semibold text-xs leading-none">
                         <Landmark className="h-3 w-3 text-blue-500" />
-                        <span className="truncate max-w-[140px] uppercase font-bold tracking-tighter" title={record.bankName || ""}>{record.bankName || "-"}</span>
+                        <span className="truncate max-w-[140px] uppercase font-black tracking-tighter" title={record.bankName || ""}>{record.bankName || "-"}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-xs font-semibold text-gray-500 capitalize">{record.branch || "-"}</TableCell>
+                    <TableCell className="text-xs font-bold text-gray-400 uppercase tracking-tighter italic">{record.branch || "-"}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5 text-xs text-gray-600 font-medium">
                         <Briefcase className="h-3 w-3 text-purple-500" />
-                        <span className="uppercase tracking-tighter">{record.caseType || "-"}</span>
+                        <span className="uppercase tracking-tighter font-extrabold">{record.caseType || "-"}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="bg-gray-100 dark:bg-zinc-900 text-[10px] font-black uppercase tracking-widest border-none px-1.5 h-5 leading-none shadow-sm">
-                        {record.status || "PENDING"}
+                      <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 dark:bg-zinc-900 text-[10px] font-black uppercase tracking-widest border-none px-1.5 h-5 leading-none shadow-sm ring-1 ring-emerald-100">
+                        {record.status || "ID-CORRECT"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs font-bold text-gray-500">₹{(record.rate || 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right px-6 font-black text-sm text-gray-900 dark:text-gray-50 underline decoration-primary/30 underline-offset-4">
+                    <TableCell className="text-right px-6 font-black text-sm text-gray-900 dark:text-gray-50 underline decoration-indigo-300 decoration-2 underline-offset-4">
                       ₹{(record.total || 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right px-6 pr-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="sm" className="h-8 font-black text-[10px] tracking-widest uppercase hover:bg-primary hover:text-white transition-all shadow-sm border border-gray-100" onClick={() => setEditingRecord(record)}>
+                        CORRECT
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))

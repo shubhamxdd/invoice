@@ -14,6 +14,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AddCompanyDialog } from "@/components/admin/add-company-dialog";
+import { TableSearch } from "@/components/admin/table-search";
+import { CompanyActions } from "@/components/admin/company-actions";
 
 export default async function CompanyManagementPage({
   searchParams,
@@ -79,15 +81,11 @@ export default async function CompanyManagementPage({
       </div>
 
       <Card className="border-none shadow-lg overflow-hidden ring-1 ring-gray-100 dark:ring-zinc-800">
-        <CardHeader className="bg-white/80 dark:bg-zinc-950/80 border-b flex flex-row items-center justify-between py-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <Input
-              placeholder="Filter by name, GST or status..."
-              className="pl-10 h-11 border-none bg-gray-50 font-bold shadow-inner"
-              defaultValue={query}
-            />
-          </div>
+        <CardHeader className="bg-white/80 dark:bg-zinc-950/80 border-b flex flex-row items-center justify-between py-4 px-8">
+          <TableSearch 
+            placeholder="Filter by name, GST or status..." 
+            defaultValue={query} 
+          />
           <div className="flex items-center gap-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
              <div className="flex items-center gap-2 pr-4 border-r">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -106,7 +104,7 @@ export default async function CompanyManagementPage({
                 <TableHead className="font-black text-[11px] uppercase tracking-widest text-gray-400 h-12">Tax Identifiers</TableHead>
                 <TableHead className="font-black text-[11px] uppercase tracking-widest text-gray-400 h-12">Registered Address</TableHead>
                 <TableHead className="font-black text-[11px] uppercase tracking-widest text-gray-400 h-12">Contact Entity</TableHead>
-                <TableHead className="font-black text-[11px] uppercase tracking-widest text-gray-400 h-12 text-right px-6">Manage</TableHead>
+                <TableHead className="font-black text-[11px] uppercase tracking-widest text-gray-400 h-12 text-right px-8">Manage</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -114,10 +112,10 @@ export default async function CompanyManagementPage({
                 <TableRow key={comp.id} className="group hover:bg-primary/[0.01] transition-colors border-gray-100">
                   <TableCell className="py-4 font-black tracking-tight text-gray-900 dark:text-gray-100 pr-0">
                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100 text-gray-500 dark:bg-zinc-900 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100 text-gray-500 dark:bg-zinc-900 group-hover:bg-primary group-hover:text-white transition-all shadow-sm pl-8">
                            <Building2 className="h-5 w-5" />
                         </div>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col pl-4">
                            <span className="text-base truncate max-w-[200px] leading-tight" title={comp.name}>{comp.name}</span>
                         </div>
                      </div>
@@ -137,15 +135,8 @@ export default async function CompanyManagementPage({
                         <span className="text-[10px] text-gray-300">ESTD: {comp.createdAt.getFullYear()}</span>
                      </div>
                   </TableCell>
-                  <TableCell className="text-right px-6">
-                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-primary border hover:border-primary/20 bg-white dark:bg-zinc-900 shadow-sm rounded-xl">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-400 hover:text-red-600 border hover:border-red-100 bg-white dark:bg-zinc-900 shadow-sm rounded-xl">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <TableCell className="text-right px-8">
+                    <CompanyActions company={comp} />
                   </TableCell>
                 </TableRow>
               ))}

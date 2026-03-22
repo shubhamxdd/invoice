@@ -15,6 +15,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { MisDataPreview } from "@/components/user/mis-data-preview";
+import { MisFileActions } from "@/components/user/mis-file-actions";
+import { TableSearch } from "@/components/admin/table-search";
 
 export default async function MisManagementPage({
   searchParams,
@@ -74,12 +76,10 @@ export default async function MisManagementPage({
           </TabsList>
           
           <div className="flex items-center gap-2 pr-2">
-            <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input
-                placeholder="Search files..."
-                className="pl-9 h-9 w-[200px] bg-white dark:bg-zinc-900 border-gray-200 rounded-xl font-medium focus-visible:ring-primary/20"
-                defaultValue={query}
+            <div className="hidden md:block">
+              <TableSearch 
+                placeholder="Search files..." 
+                defaultValue={query} 
               />
             </div>
             <Button variant="outline" size="sm" className="h-9 rounded-xl border-gray-200 font-bold tracking-tight bg-white dark:bg-zinc-900">
@@ -104,18 +104,11 @@ export default async function MisManagementPage({
                   <CardTitle className="text-lg font-bold mt-2 truncate" title={file.fileName}>{file.fileName}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-tighter">
-                    <span>Records: <span className="text-gray-900 dark:text-gray-200">{file.recordCount}</span></span>
-                    <span>Status: <span className="text-emerald-600">{file.status}</span></span>
+                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-tighter text-right items-center">
+                    <span className="text-left">Records: <span className="text-gray-900 dark:text-gray-200">{file.recordCount}</span></span>
+                    <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-none font-bold text-[10px] h-5">{file.status.toUpperCase()}</Badge>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 font-bold h-8 text-[11px] uppercase tracking-wider bg-white dark:bg-zinc-900">
-                      <Eye className="h-3 w-3 mr-1.5" /> preview
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1 font-bold h-8 text-[11px] uppercase tracking-wider bg-white dark:bg-zinc-900 text-red-600 hover:text-red-600 hover:bg-red-50">
-                      <Trash2 className="h-3 w-3 mr-1.5" /> delete
-                    </Button>
-                  </div>
+                  <MisFileActions file={file} variant="card" />
                 </CardContent>
               </Card>
             ))}
@@ -124,14 +117,14 @@ export default async function MisManagementPage({
           <Card className="border-none shadow-lg overflow-hidden">
             <CardContent className="p-0">
               <Table>
-                <TableHeader className="bg-gray-50/80 dark:bg-zinc-900/80">
+                <TableHeader className="bg-gray-50/80 dark:bg-zinc-900/80 text-left">
                   <TableRow>
-                    <TableHead className="font-bold uppercase text-[11px] tracking-wider text-gray-500">File Name</TableHead>
+                    <TableHead className="font-bold uppercase text-[11px] tracking-wider text-gray-500 pl-8">File Name</TableHead>
                     <TableHead className="font-bold uppercase text-[11px] tracking-wider text-gray-500">Records</TableHead>
                     <TableHead className="font-bold uppercase text-[11px] tracking-wider text-gray-500">Type</TableHead>
                     <TableHead className="font-bold uppercase text-[11px] tracking-wider text-gray-500">Period</TableHead>
                     <TableHead className="font-bold uppercase text-[11px] tracking-wider text-gray-500">Uploaded On</TableHead>
-                    <TableHead className="font-bold uppercase text-[11px] tracking-wider text-gray-500 text-right px-6">Actions</TableHead>
+                    <TableHead className="font-bold uppercase text-[11px] tracking-wider text-gray-500 text-right px-8">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -147,12 +140,12 @@ export default async function MisManagementPage({
                   ) : (
                     files.map((file) => (
                       <TableRow key={file.id} className="group hover:bg-gray-50/50 dark:hover:bg-zinc-900/50 transition-colors">
-                        <TableCell className="font-bold pr-0">
+                        <TableCell className="font-bold pr-0 pl-8">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-400 dark:bg-zinc-900 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-400 dark:bg-zinc-900 group-hover:bg-primary group-hover:text-white transition-colors border shadow-sm">
                               <FileText className="h-5 w-5" />
                             </div>
-                            <span className="truncate max-w-[250px]">{file.fileName}</span>
+                            <span className="truncate max-w-[250px] italic">{file.fileName}</span>
                           </div>
                         </TableCell>
                         <TableCell className="font-bold text-gray-600">{file.recordCount}</TableCell>
@@ -161,17 +154,10 @@ export default async function MisManagementPage({
                         </TableCell>
                         <TableCell className="text-xs font-semibold text-gray-400 capitalize">{file.reportType}</TableCell>
                         <TableCell className="text-xs font-bold text-gray-500 uppercase">
-                          {file.createdAt.toLocaleDateString()} at {file.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {file.createdAt.toLocaleDateString()}
                         </TableCell>
-                        <TableCell className="text-right px-6 pr-8">
-                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-primary border hover:border-primary/20 bg-white dark:bg-zinc-900">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-500 border hover:border-red-100/50 bg-white dark:bg-zinc-900">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                        <TableCell className="text-right px-8">
+                          <MisFileActions file={file} variant="table" />
                         </TableCell>
                       </TableRow>
                     ))

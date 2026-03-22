@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { BrainCircuit as Brain, Search, Plus, RefreshCw, Layers, FileDigit, Settings2, Sparkles, ChevronRight, Wand2 } from "lucide-react";
+import { Brain, Search, Plus, Sparkles, Wand2, Settings2, ChevronRight, FileDigit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,6 +14,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { TableSearch } from "@/components/admin/table-search";
+import { AddTemplateDialog } from "@/components/admin/add-template-dialog";
 import Link from "next/link";
 
 export default async function aiTemplatesPage({
@@ -53,16 +55,13 @@ export default async function aiTemplatesPage({
              <Settings2 className="h-4 w-4" />
              AI CONFIG
           </Button>
-          <Button className="gap-2 h-12 px-8 font-black tracking-widest bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-600/20">
-             <Wand2 className="h-4 w-4" />
-             NEW TEMPLATE
-          </Button>
+          <AddTemplateDialog />
         </div>
       </div>
 
       <div className="grid gap-8 md:grid-cols-3">
          {/* Stats and Engine Status */}
-         <Card className="md:col-span-1 border-none shadow-xl bg-indigo-900 text-white overflow-hidden rounded-[2.5rem] relative group">
+         <Card className="md:col-span-1 border-none shadow-xl bg-indigo-900 text-white overflow-hidden rounded-[2.5rem] relative group h-fit">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent pointer-events-none" />
             <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-colors" />
             <CardHeader className="p-8">
@@ -104,14 +103,10 @@ export default async function aiTemplatesPage({
          <div className="md:col-span-2 space-y-6">
             <Card className="border-none shadow-lg overflow-hidden ring-1 ring-gray-100 dark:ring-zinc-800 bg-white dark:bg-zinc-950 rounded-3xl">
                <CardHeader className="bg-gray-50/50 dark:bg-zinc-900/50 border-b flex flex-row items-center justify-between py-6 px-8">
-                  <div className="relative flex-1 max-w-sm">
-                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                     <Input
-                        placeholder="Search trained bank templates..."
-                        className="pl-10 h-10 border-none bg-white font-bold shadow-sm"
-                        defaultValue={query}
-                     />
-                  </div>
+                  <TableSearch 
+                    placeholder="Search trained bank templates..." 
+                    defaultValue={query} 
+                  />
                   <div className="text-xs font-black text-gray-400 uppercase tracking-widest">
                      {templates.length} TRAINED MODELS
                   </div>
@@ -139,77 +134,54 @@ export default async function aiTemplatesPage({
                                        <p className="text-lg font-black italic tracking-tight text-gray-900 dark:text-gray-100 uppercase">Neural engine is empty</p>
                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Upload bank PDF samples to train the extractor</p>
                                     </div>
-                                    <Button className="font-black text-[11px] uppercase tracking-widest h-10 shadow-lg shadow-indigo-600/10">TRAIN NEW BANK MODEL</Button>
+                                    <AddTemplateDialog />
                                  </div>
                               </TableCell>
                            </TableRow>
                         ) : (
-                           templates.map((tpl) => (
-                              <TableRow key={tpl.id} className="group hover:bg-indigo-50/30 transition-colors border-gray-50">
-                                 <TableCell className="pl-8 py-5">
-                                    <div className="flex items-center gap-3">
-                                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-500 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                                          <FileDigit className="h-5 w-5" />
-                                       </div>
-                                       <span className="font-black italic tracking-tight text-gray-900 dark:text-gray-100">{(tpl as any).bank?.bankName}</span>
+                          templates.map((temp) => (
+                            <TableRow key={temp.id} className="group hover:bg-gray-50/50 transition-colors">
+                              <TableCell className="pl-8 py-5">
+                                 <div className="flex flex-col">
+                                    <span className="text-sm font-black italic tracking-tighter text-indigo-900">{temp.bank.bankName}</span>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{temp.bank.branch}</span>
+                                 </div>
+                              </TableCell>
+                              <TableCell className="font-mono text-xs font-bold text-indigo-600">
+                                 {temp.docClassifier}
+                              </TableCell>
+                              <TableCell>
+                                 <div className="flex flex-wrap gap-1 max-w-[200px]">
+                                    {temp.extractedFields ? JSON.parse(temp.extractedFields).slice(0, 3).map((f: any) => (
+                                      <Badge key={f.key} variant="outline" className="text-[9px] font-black italic px-1 h-4 border-indigo-100 bg-indigo-50/30 text-indigo-400">{f.label}</Badge>
+                                    )) : <span className="text-[10px] text-gray-300 font-bold italic tracking-widest">NO MAPPING</span>}
+                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                 <div className="flex items-center gap-2">
+                                    <div className="h-1.5 w-16 bg-gray-100 rounded-full overflow-hidden">
+                                       <div className="h-full bg-indigo-500 rounded-full" style={{ width: '92%' }} />
                                     </div>
-                                 </TableCell>
-                                 <TableCell className="font-bold text-gray-500 uppercase text-[10px] tracking-widest">{tpl.docClassifier || 'V2-DEFAULT-RNN'}</TableCell>
-                                 <TableCell>
-                                    <div className="flex flex-wrap gap-1 max-w-[150px]">
-                                       {['REFNO', 'NAME', 'TOTAL'].map(f => (
-                                          <Badge key={f} variant="outline" className="text-[8px] font-black uppercase px-1 h-3 border-gray-200 text-gray-400 bg-gray-50/50">{f}</Badge>
-                                       ))}
-                                    </div>
-                                 </TableCell>
-                                 <TableCell>
-                                    <div className="flex items-center gap-2">
-                                       <div className="w-12 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                          <div className="h-full bg-indigo-500" style={{ width: '92%' }} />
-                                       </div>
-                                       <span className="text-[10px] font-black italic tracking-tighter">92%</span>
-                                    </div>
-                                 </TableCell>
-                                 <TableCell className="text-right pr-8">
-                                    <Button variant="ghost" size="sm" className="font-black text-[10px] tracking-widest text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl transition-all">
+                                    <span className="text-[10px] font-black italic text-indigo-900">92%</span>
+                                 </div>
+                              </TableCell>
+                              <TableCell className="text-right pr-8">
+                                 <Link href={`/admin/templates/${temp.id}`}>
+                                    <Button variant="ghost" size="sm" className="h-9 px-4 font-black text-[10px] tracking-[0.2em] italic uppercase bg-white border border-gray-100 shadow-sm hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all">
                                        MANAGE MODEL
                                        <ChevronRight className="h-3 w-3 ml-2" />
                                     </Button>
-                                 </TableCell>
-                              </TableRow>
-                           ))
+                                 </Link>
+                              </TableCell>
+                            </TableRow>
+                          ))
                         )}
                      </TableBody>
                   </Table>
                </CardContent>
             </Card>
-
-            <div className="grid grid-cols-2 gap-6 pb-12">
-               <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-[2rem] flex items-start gap-4 shadow-sm">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-indigo-600 shadow-sm border border-indigo-200 shrink-0">
-                     <Layers className="h-6 w-6" />
-                  </div>
-                  <div>
-                     <h4 className="font-black italic tracking-tight uppercase text-indigo-900 leading-none">Multi-Engine Support</h4>
-                     <p className="text-[11px] font-bold text-indigo-800/60 uppercase tracking-tight mt-2 leading-relaxed">Switch between Google Document AI and Azure with zero code changes.</p>
-                  </div>
-               </div>
-               <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem] flex items-start gap-4 shadow-sm">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm border border-emerald-200 shrink-0">
-                     <RefreshCw className="h-6 w-6" />
-                  </div>
-                  <div>
-                     <h4 className="font-black italic tracking-tight uppercase text-emerald-900 leading-none">Auto-Sync Mapping</h4>
-                     <p className="text-[11px] font-bold text-emerald-800/60 uppercase tracking-tight mt-2 leading-relaxed">Automatically maps extracted fields to MIS database columns.</p>
-                  </div>
-               </div>
-            </div>
          </div>
       </div>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(" ");
 }

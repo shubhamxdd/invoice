@@ -15,6 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Link from "next/link";
 import { BulkUploadBanks } from "@/components/admin/bulk-upload-banks";
+import { TableSearch } from "@/components/admin/table-search";
+import { AddBankDialog } from "@/components/admin/add-bank-dialog";
+import { BankActions } from "@/components/admin/bank-actions";
 
 export default async function BanksPage({
   searchParams,
@@ -55,35 +58,28 @@ export default async function BanksPage({
             <Landmark className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Bank Management</h1>
-            <p className="text-sm text-muted-foreground">Manage {totalCount} supported banks and branches</p>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 italic tracking-tighter">Bank Management</h1>
+            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest leading-none mt-1">Manage {totalCount} supported banks and branches</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" className="gap-2 font-bold h-10 border-gray-200 uppercase text-[10px] tracking-widest">
             <RefreshCw className="h-4 w-4" />
-            Refresh
+            Sync
           </Button>
           <BulkUploadBanks />
-          <Button className="gap-2 shadow-sm shadow-primary/20">
-            <Plus className="h-4 w-4" />
-            Add Bank
-          </Button>
+          <AddBankDialog />
         </div>
       </div>
 
-      <Card className="border-none shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <Input
-              placeholder="Search banks or branches..."
-              className="pl-10"
-              defaultValue={query}
-            />
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Showing {banks.length} of {totalCount} results</span>
+      <Card className="border-none shadow-lg rounded-[2rem] overflow-hidden bg-white/50 backdrop-blur-xl ring-1 ring-gray-100">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 py-6 px-8 border-b bg-gray-50/30">
+          <TableSearch 
+            placeholder="Search banks or branches..." 
+            defaultValue={query} 
+          />
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-400">
+            <span>Showing {banks.length} / {totalCount} total results</span>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -125,15 +121,8 @@ export default async function BanksPage({
                         {bank.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right px-6">
-                      <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-primary">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                    <TableCell className="text-right px-8">
+                      <BankActions bank={bank} />
                     </TableCell>
                   </TableRow>
                 ))

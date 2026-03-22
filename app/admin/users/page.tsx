@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AddUserDialog } from "@/components/admin/add-user-dialog";
+import { TableSearch } from "@/components/admin/table-search";
 
 export default async function UserManagementPage({
   searchParams,
@@ -74,14 +75,10 @@ export default async function UserManagementPage({
 
       <Card className="border-none shadow-lg overflow-hidden">
         <CardHeader className="bg-gray-50/50 dark:bg-zinc-900/50 border-b flex flex-row items-center justify-between py-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <Input
-              placeholder="Search by name, email or username..."
-              className="pl-10 h-10 border-none bg-white font-medium shadow-sm transition-all focus:ring-2 focus:ring-primary/20"
-              defaultValue={query}
-            />
-          </div>
+          <TableSearch 
+            placeholder="Search by name, email or username..." 
+            defaultValue={query} 
+          />
           <Button variant="ghost" size="sm" className="font-bold text-[11px] uppercase tracking-widest text-gray-400">
             <RefreshCw className="h-3.5 w-3.5 mr-2" />
             REFRESH LIST
