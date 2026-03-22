@@ -16,6 +16,8 @@ export async function GET(req: NextRequest) {
   const caseType = searchParams.get("caseType") || "";
   const status = searchParams.get("status") || "";
   const misFileId = searchParams.get("fileId") || "";
+  const dateFrom = searchParams.get("dateFrom") || "";
+  const dateTo = searchParams.get("dateTo") || "";
 
   const where: any = {
     misFile: { uploadedBy: session.user.id },
@@ -31,10 +33,16 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  if (bank) where.bankName = bank;
-  if (branch) where.branch = branch;
-  if (caseType) where.caseType = caseType;
-  if (status) where.status = status;
+  if (bank && bank !== "all") where.bankName = bank;
+  if (branch && branch !== "all") where.branch = branch;
+  if (caseType && caseType !== "all") where.caseType = caseType;
+  if (status && status !== "all") where.status = status;
+
+  if (dateFrom || dateTo) {
+    where.initiationDate = {};
+    if (dateFrom) where.initiationDate.gte = dateFrom;
+    if (dateTo) where.initiationDate.lte = dateTo;
+  }
 
   try {
     const [records, total] = await Promise.all([

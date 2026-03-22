@@ -14,14 +14,17 @@ export async function PATCH(
 
   try {
     const data = await req.json();
-    const bank = await prisma.bank.update({
+    
+    // Don't allow changing role if it's the only admin? (Optional safety)
+    
+    const user = await prisma.user.update({
       where: { id: params.id },
       data,
     });
 
-    return NextResponse.json(bank);
+    return NextResponse.json(user);
   } catch (error: any) {
-    console.error("Bank update error:", error);
+    console.error("User update error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -36,14 +39,19 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Prevent self-deletion
+  if (session.user.id === params.id) {
+    return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
+  }
+
   try {
-    await prisma.bank.delete({
+    await prisma.user.delete({
       where: { id: params.id },
     });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Bank deletion error:", error);
+    console.error("User deletion error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

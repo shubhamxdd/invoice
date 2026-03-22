@@ -27,6 +27,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { 
   Table, 
   TableBody, 
   TableCell, 
@@ -62,27 +70,71 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
   });
   
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [previewTotal, setPreviewTotal] = useState(0);
+  const [previewPage, setPreviewPage] = useState(1);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [recordCount, setRecordCount] = useState(0);
   const [availableBanks, setAvailableBanks] = useState<string[]>([]);
   const [availableBranches, setAvailableBranches] = useState<string[]>([]);
 
-  // Fetch record count and filter options when step 2 opens
+  // Fetch record count and filter options when step 2 opens or filters change
   useEffect(() => {
     if (step === 2) {
       const loadFilterInfo = async () => {
         try {
-          const response = await fetch("/api/user/mis/filter-info");
+          // Construct query params for count
+          const params = new URLSearchParams({
+            bank: filters.bank,
+            branch: filters.branch,
+            dateFrom: filters.dateFrom,
+            dateTo: filters.dateTo,
+          });
+          const response = await fetch(`/api/user/mis/records?pageSize=1&${params.toString()}`);
+          if (!response.ok) throw new Error();
           const data = await response.json();
-          setAvailableBanks(data.banks || []);
-          setAvailableBranches(data.branches || []);
           setRecordCount(data.total || 0);
+          
+          // Only fetch bank/branch info once when step 2 first appears
+          if (availableBanks.length === 0) {
+            const infoRes = await fetch("/api/user/mis/filter-info");
+            const infoData = await infoRes.json();
+            setAvailableBanks(infoData.banks || []);
+            setAvailableBranches(infoData.branches || []);
+          }
         } catch (error) {
           console.error("Filter info load fail:", error);
         }
       };
       loadFilterInfo();
     }
-  }, [step]);
+  }, [step, filters]);
+
+  const fetchPreviewData = async (page = 1) => {
+    setIsPreviewLoading(true);
+    setPreviewPage(page);
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        pageSize: "10",
+        bank: filters.bank,
+        branch: filters.branch,
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
+      });
+      const response = await fetch(`/api/user/mis/records?${params.toString()}`);
+      if (!response.ok) throw new Error("Failed to fetch");
+      const data = await response.json();
+      setPreviewData(data.records || []);
+      setPreviewTotal(data.total || 0);
+      setIsPreviewOpen(true);
+    } catch (error) {
+      toast.error("Failed to load preview data");
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
 
   const handleGenerate = async () => {
     setIsProcessing(true);
@@ -240,24 +292,133 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
 
                     <div className="space-y-2">
                        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Date From</Label>
-                       <Input type="date" className="h-11 bg-gray-50 border-none font-bold shadow-sm" />
+                       <Input 
+                        type="date" 
+                        className="h-11 bg-gray-50 border-none font-bold shadow-sm"
+                        value={filters.dateFrom}
+                        onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
+                       />
                     </div>
-
+ 
                     <div className="space-y-2">
                        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Date To</Label>
-                       <Input type="date" className="h-11 bg-gray-50 border-none font-bold shadow-sm" />
+                       <Input 
+                        type="date" 
+                        className="h-11 bg-gray-50 border-none font-bold shadow-sm"
+                        value={filters.dateTo}
+                        onChange={(e) => handleFilterChange("dateTo", e.target.value)}
+                       />
                     </div>
                  </CardContent>
                  <CardFooter className="bg-gray-50/30 p-4 border-t flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-gray-500 italic">
-                       <Info className="h-3.5 w-3.5 text-blue-500" />
-                       Filters will be applied across all MIS files.
+                    <div className="flex items-center gap-4">
+                       <div className="flex items-center gap-2 text-xs font-bold text-gray-500 italic">
+                          <Info className="h-3.5 w-3.5 text-blue-500" />
+                          Filters will be applied across all MIS files.
+                       </div>
+                       <Button 
+                         variant="outline" 
+                         size="sm" 
+                         className="h-9 rounded-xl font-bold bg-white text-primary border-primary/20 hover:bg-primary/5"
+                         onClick={() => fetchPreviewData(1)}
+                         disabled={isPreviewLoading}
+                       >
+                         {isPreviewLoading ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <TableIcon className="h-3.5 w-3.5 mr-2" />}
+                         PREVIEW DATA
+                       </Button>
                     </div>
                     <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 px-3 py-1 font-black tracking-tight border-none">
                        {recordCount} RECORDS FOUND
                     </Badge>
                  </CardFooter>
                </Card>
+ 
+               {/* Preview Dialog */}
+               <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+                 <DialogContent className="sm:max-w-[1000px] p-0 border-none shadow-2xl overflow-hidden rounded-[2.5rem]">
+                    <DialogHeader className="p-8 bg-zinc-900 text-white leading-none">
+                      <DialogTitle className="text-2xl font-black italic tracking-tighter flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 shadow-inner">
+                           <TableIcon className="h-5 w-5" />
+                        </div>
+                        Data Preview
+                      </DialogTitle>
+                      <DialogDescription className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest mt-2">
+                        Verifying {previewTotal} records matching current filters
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="p-0 overflow-y-auto max-h-[60vh]">
+                       <Table>
+                          <TableHeader className="bg-gray-50/80 sticky top-0 z-10">
+                             <TableRow>
+                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-gray-400 pl-8">Applicant</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-gray-400">EEPAC Ref</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-gray-400">Bank / Branch</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-gray-400">Date</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-gray-400 text-right pr-8">Amount</TableHead>
+                             </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                             {previewData.map((record) => (
+                               <TableRow key={record.id} className="group hover:bg-primary/[0.01]">
+                                  <TableCell className="pl-8 py-4">
+                                     <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-gray-900">{record.applicantName}</span>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase italic leading-none mt-0.5">{record.city || "Unknown City"}</span>
+                                     </div>
+                                  </TableCell>
+                                  <TableCell className="font-mono text-xs font-black text-primary">{record.eepacRefNo}</TableCell>
+                                  <TableCell>
+                                     <div className="flex flex-col text-[10px] font-bold text-gray-500 uppercase">
+                                        <span className="flex items-center gap-1.5"><Landmark className="h-3 w-3" /> {record.bankName}</span>
+                                        <span className="mt-0.5 ml-4 opacity-60">{record.branch}</span>
+                                     </div>
+                                  </TableCell>
+                                  <TableCell className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{record.initiationDate || "-"}</TableCell>
+                                  <TableCell className="text-right pr-8 font-black text-gray-900 italic tracking-tighter">
+                                     ₹{record.total?.toLocaleString() || "0"}
+                                  </TableCell>
+                               </TableRow>
+                             ))}
+                             {previewData.length === 0 && (
+                               <TableRow>
+                                 <TableCell colSpan={5} className="h-40 text-center">
+                                    <p className="text-sm font-bold text-gray-400 italic">No records found for current filters.</p>
+                                 </TableCell>
+                               </TableRow>
+                             )}
+                          </TableBody>
+                       </Table>
+                    </div>
+
+                    <DialogFooter className="p-6 bg-gray-50/50 border-t flex items-center justify-between">
+                       <div className="flex items-center gap-1 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                          Page <span className="text-primary">{previewPage}</span> of {Math.max(1, Math.ceil(previewTotal / 10))}
+                       </div>
+                       <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="font-bold rounded-xl h-9" 
+                            disabled={previewPage === 1}
+                            onClick={() => fetchPreviewData(previewPage - 1)}
+                          >
+                             PREVIOUS
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="font-bold rounded-xl h-9"
+                            disabled={previewPage * 10 >= previewTotal}
+                            onClick={() => fetchPreviewData(previewPage + 1)}
+                          >
+                             NEXT
+                          </Button>
+                       </div>
+                    </DialogFooter>
+                 </DialogContent>
+               </Dialog>
 
                {/* Generation Options */}
                <Card className="md:col-span-3 border-none shadow-lg outline outline-2 outline-primary/5">

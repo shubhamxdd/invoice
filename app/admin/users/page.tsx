@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AddUserDialog } from "@/components/admin/add-user-dialog";
 import { TableSearch } from "@/components/admin/table-search";
+import { UserActions } from "@/components/admin/user-actions";
 
 export default async function UserManagementPage({
   searchParams,
@@ -134,14 +135,7 @@ export default async function UserManagementPage({
                     {user.createdAt.toLocaleDateString('en-IN', { month: 'short', year: 'numeric', day: '2-digit' })}
                   </TableCell>
                   <TableCell className="text-right px-6">
-                    <div className="flex justify-end gap-1 opacity-10 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-primary transition-all shadow-sm bg-white border border-gray-100">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600 transition-all shadow-sm bg-white border border-gray-100">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <UserActions user={user} />
                   </TableCell>
                 </TableRow>
               ))}

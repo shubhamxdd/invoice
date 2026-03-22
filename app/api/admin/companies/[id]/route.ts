@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   const session = await auth();
   if (!session || session.user?.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,8 +28,9 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
+  const params = await paramsPromise;
   const session = await auth();
   if (!session || session.user?.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

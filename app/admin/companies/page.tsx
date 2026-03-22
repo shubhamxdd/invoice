@@ -61,7 +61,10 @@ export default async function CompanyManagementPage({
                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 text-gray-400 border dark:bg-zinc-900">
                       <Building2 className="h-5 w-5" />
                    </div>
-                   <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-none font-black text-[10px] uppercase tracking-widest px-2">{comp.isActive ? "ACTIVE" : "INACTIVE"}</Badge>
+                   <Badge variant="secondary" className={cn(
+                     "border-none font-black text-[10px] uppercase tracking-widest px-2",
+                     comp.isActive ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"
+                   )}>{comp.isActive ? "ACTIVE" : "INACTIVE"}</Badge>
                 </div>
                 <CardTitle className="text-xl font-black tracking-tighter truncate leading-none pt-2" title={comp.name}>{comp.name}</CardTitle>
                 <CardDescription className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{comp.gstNumber || 'UNREGISTERED'}</CardDescription>
@@ -103,6 +106,7 @@ export default async function CompanyManagementPage({
                 <TableHead className="font-black text-[11px] uppercase tracking-widest text-gray-400 h-12">Company Identity</TableHead>
                 <TableHead className="font-black text-[11px] uppercase tracking-widest text-gray-400 h-12">Tax Identifiers</TableHead>
                 <TableHead className="font-black text-[11px] uppercase tracking-widest text-gray-400 h-12">Registered Address</TableHead>
+                <TableHead className="font-black text-[11px] uppercase tracking-widest text-gray-400 h-12">Status</TableHead>
                 <TableHead className="font-black text-[11px] uppercase tracking-widest text-gray-400 h-12">Contact Entity</TableHead>
                 <TableHead className="font-black text-[11px] uppercase tracking-widest text-gray-400 h-12 text-right px-8">Manage</TableHead>
               </TableRow>
@@ -111,8 +115,8 @@ export default async function CompanyManagementPage({
               {companies.map((comp) => (
                 <TableRow key={comp.id} className="group hover:bg-primary/[0.01] transition-colors border-gray-100">
                   <TableCell className="py-4 font-black tracking-tight text-gray-900 dark:text-gray-100 pr-0">
-                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100 text-gray-500 dark:bg-zinc-900 group-hover:bg-primary group-hover:text-white transition-all shadow-sm pl-8">
+                     <div className="flex items-center gap-3 pl-8">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100 text-gray-500 dark:bg-zinc-900 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
                            <Building2 className="h-5 w-5" />
                         </div>
                         <div className="flex flex-col pl-4">
@@ -124,10 +128,18 @@ export default async function CompanyManagementPage({
                      <div className="flex flex-col gap-0.5">
                         <span className="text-gray-900 dark:text-gray-100">GST: {comp.gstNumber || "-"}</span>
                         <span>PAN: {comp.panNumber || "-"}</span>
-                     </div>
+                      </div>
                   </TableCell>
                   <TableCell className="max-w-[180px] text-xs font-semibold text-gray-500 italic leading-relaxed truncate group-hover:whitespace-normal transition-all" title={comp.address || ""}>
                     {comp.address || "-"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className={cn(
+                      "font-black text-[9px] uppercase tracking-widest border-none px-2 h-5",
+                      comp.isActive ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"
+                    )}>
+                      {comp.isActive ? "ACTIVE" : "INACTIVE"}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-xs font-bold text-gray-500 uppercase tracking-tighter">
                      <div className="flex flex-col">

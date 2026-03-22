@@ -9,10 +9,11 @@ import { notFound } from "next/navigation";
 import { TemplateConfigForm } from "@/components/admin/template-config-form";
 
 export default async function ManageTemplatePage({
-  params,
+  params: paramsPromise,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const params = await paramsPromise;
   const session = await auth();
   if (!session || session.user?.role !== "admin") {
     return notFound();
