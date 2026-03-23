@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import fs from "fs/promises";
 import path from "path";
+import { analyzeDocument } from "@/lib/azure-analysis";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -32,13 +33,23 @@ export async function POST(req: NextRequest) {
     const filePath = path.join(uploadDir, fileName);
     await fs.writeFile(filePath, buffer);
 
+    // AI Analysis
+    let extractedFields = "[]";
+    try {
+      const analysis = await analyzeDocument(buffer);
+      extractedFields = JSON.stringify(analysis.fields);
+    } catch (e) {
+      console.error("AI Analysis failed, creating template without fields", e);
+    }
+
     const template = await prisma.bankTemplate.create({
       data: {
         bankId,
         templateType: templateType || "pdf",
-        docClassifier: docClassifier || "Default Parser",
+        docClassifier: docClassifier || "Neural-V2-Extraction",
         fileName: file.name,
         filePath: `/templates/${fileName}`,
+        extractedFields,
         isActive: true,
       },
     });

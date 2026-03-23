@@ -66,17 +66,23 @@ export async function POST(req: NextRequest) {
       
       const filenameBase = `invoice_${sanitizedBank}_${sanitizedCity}_${timestamp}`;
 
+      // Fetch dynamic template for this bank
+      const bankTemplate = await prisma.bankTemplate.findFirst({
+        where: { bank: { bankName: bankName }, isActive: true },
+        orderBy: { updatedAt: 'desc' }
+      });
+
       // PDF Output
       if (options.format === "pdf" || options.format === "both") {
         const pdfFilename = `${filenameBase}.pdf`;
-        const pdfBuffer = await generatePdfInvoice(groupRecords, company, pdfFilename, options);
+        const pdfBuffer = await generatePdfInvoice(groupRecords, company, pdfFilename, { ...options, template: bankTemplate });
         zip.file(`${sanitizedBank}/${sanitizedCity}/pdf/${pdfFilename}`, pdfBuffer);
       }
 
       // Excel Output
       if (options.format === "excel" || options.format === "both") {
         const excelFilename = `${filenameBase}.xlsx`;
-        const excelBuffer = await generateExcelInvoice(groupRecords, company, excelFilename, options);
+        const excelBuffer = await generateExcelInvoice(groupRecords, company, excelFilename, { ...options, template: bankTemplate });
         zip.file(`${sanitizedBank}/${sanitizedCity}/excel/${excelFilename}`, excelBuffer);
       }
     }
@@ -110,7 +116,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return new Response(zipBuffer, {
+    return new NextResponse(zipBuffer as any, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",

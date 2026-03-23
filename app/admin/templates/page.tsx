@@ -18,6 +18,8 @@ import { TableSearch } from "@/components/admin/table-search";
 import { AddTemplateDialog } from "@/components/admin/add-template-dialog";
 import Link from "next/link";
 
+import { cn } from "@/lib/utils";
+
 export default async function aiTemplatesPage({
   searchParams,
 }: {
@@ -81,10 +83,12 @@ export default async function aiTemplatesPage({
 
                <div className="space-y-4">
                   <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest text-indigo-200">
-                     <span>Azure Form Recognizer</span>
-                     <Badge className="bg-gray-400 text-white border-none text-[9px]">STANDBY</Badge>
+                     <span>Azure Document Intelligence</span>
+                     <Badge className={cn("text-white border-none text-[9px]", process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY ? "bg-emerald-500" : "bg-gray-400")}>
+                        {process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY ? "ACTIVE" : "STANDBY"}
+                     </Badge>
                   </div>
-                  <Progress value={0} className="h-2 bg-indigo-950/50" />
+                  <Progress value={process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY ? 100 : 0} className="h-2 bg-indigo-950/50" />
                </div>
 
                <div className="pt-4 border-t border-white/10 mt-6 grid grid-cols-2 gap-4">
