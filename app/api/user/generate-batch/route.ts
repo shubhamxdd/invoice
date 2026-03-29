@@ -77,12 +77,21 @@ export async function POST(req: NextRequest) {
         ? `${sanitizedBank}/${sanitizedBranch}`
         : sanitizedBank;
 
+      // Fetch specific Bank record for regional settings (GST)
+      const dbBank = await prisma.bank.findFirst({
+        where: {
+          bankName: groupRecords[0].bankName,
+          branch: groupRecords[0].branch
+        }
+      });
 
-      // PDF Output (Neural Clean-Fill)
+      // PDF Output (Standardized 2-Section Layout)
       if (options.format === "pdf" || options.format === "both") {
         const pdfFilename = `${filenameBase}.pdf`;
         const pdfBuffer = await generatePdfInvoice(groupRecords, company, pdfFilename, { 
-            ...options
+            ...options,
+            bank: dbBank,
+            userName: session.user.name
         });
         
         if (pdfBuffer) {

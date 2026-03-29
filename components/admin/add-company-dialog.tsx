@@ -28,8 +28,13 @@ export function AddCompanyDialog() {
     address: "",
     gstNumber: "",
     panNumber: "",
+    cin: "",
+    udyamNumber: "",
     contactEmail: "",
-    bankDetails: "",
+    bankName: "",
+    branchName: "",
+    accountNumber: "",
+    ifscCode: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,7 +52,11 @@ export function AddCompanyDialog() {
 
       toast.success("Company profile registered successfully!");
       setIsOpen(false);
-      setFormData({ name: "", address: "", gstNumber: "", panNumber: "", contactEmail: "", bankDetails: "" });
+      setFormData({ 
+        name: "", address: "", gstNumber: "", panNumber: "", 
+        cin: "", udyamNumber: "", contactEmail: "", 
+        bankName: "", branchName: "", accountNumber: "", ifscCode: "" 
+      });
       router.refresh();
     } catch (error: any) {
       toast.error(error.message);
@@ -64,7 +73,7 @@ export function AddCompanyDialog() {
           REGISTER COMPANY
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] p-0 border-none shadow-2xl overflow-scroll max-h-[90vh] rounded-3xl">
+      <DialogContent className="sm:max-w-[700px] p-0 border-none shadow-2xl overflow-scroll max-h-[90vh] rounded-3xl">
         <DialogHeader className="p-8 bg-orange-600 text-white">
           <DialogTitle className="text-2xl font-black italic tracking-tighter flex items-center gap-3 leading-none">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 shadow-inner border border-white/10">
@@ -73,53 +82,84 @@ export function AddCompanyDialog() {
             Register Company Profile
           </DialogTitle>
           <DialogDescription className="text-white/70 font-bold uppercase text-[10px] tracking-widest mt-2">
-            Add a new invoicing entity with tax and registration details
+            Add a new invoicing entity with tax, bank and registration details
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           <div className="space-y-6">
-             <div className="space-y-2">
-               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Company Legal Name *</Label>
-               <div className="relative group">
-                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
-                 <Input 
-                   className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm"
-                   placeholder="e.g. Acme Services Pvt Ltd"
-                   required
-                   value={formData.name}
-                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                 />
-               </div>
+             {/* Base Info */}
+             <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Company Legal Name *</Label>
+                  <div className="relative group">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
+                    <Input 
+                      className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm"
+                      placeholder="e.g. Acme Services Pvt Ltd"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    />
+                  </div>
+                </div>
+             </div>
+
+             {/* Registration Details */}
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">GST Registration *</Label>
+                  <div className="relative group">
+                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
+                    <Input 
+                      className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm uppercase font-mono tracking-widest"
+                      placeholder="27ABCDE1234F1Z5"
+                      required
+                      value={formData.gstNumber}
+                      onChange={(e) => setFormData({...formData, gstNumber: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Income Tax PAN *</Label>
+                  <div className="relative group">
+                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
+                    <Input 
+                      className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm uppercase font-mono tracking-widest"
+                      placeholder="ABCDE124F"
+                      required
+                      value={formData.panNumber}
+                      onChange={(e) => setFormData({...formData, panNumber: e.target.value})}
+                    />
+                  </div>
+                </div>
              </div>
 
              <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">GST Registration *</Label>
-                 <div className="relative group">
-                   <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
-                   <Input 
-                     className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm uppercase font-mono text-center tracking-widest"
-                     placeholder="27ABCDE1234F1Z5"
-                     required
-                     value={formData.gstNumber}
-                     onChange={(e) => setFormData({...formData, gstNumber: e.target.value})}
-                   />
-                 </div>
-               </div>
-               <div className="space-y-2">
-                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Income Tax PAN *</Label>
-                 <div className="relative group">
-                   <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
-                   <Input 
-                     className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm uppercase font-mono text-center tracking-widest"
-                     placeholder="ABCDE124F"
-                     required
-                     value={formData.panNumber}
-                     onChange={(e) => setFormData({...formData, panNumber: e.target.value})}
-                   />
-                 </div>
-               </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">CIN (Corporate No)</Label>
+                  <div className="relative group">
+                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
+                    <Input 
+                      className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm uppercase font-mono tracking-wider"
+                      placeholder="L17110MH1973PLC019786"
+                      value={formData.cin}
+                      onChange={(e) => setFormData({...formData, cin: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">UDYAM Registration</Label>
+                  <div className="relative group">
+                    <CheckCircle2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
+                    <Input 
+                      className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm uppercase font-mono tracking-wider"
+                      placeholder="UDYAM-MH-01-1234567"
+                      value={formData.udyamNumber}
+                      onChange={(e) => setFormData({...formData, udyamNumber: e.target.value})}
+                    />
+                  </div>
+                </div>
              </div>
 
              <div className="space-y-2">
@@ -127,8 +167,8 @@ export function AddCompanyDialog() {
                <div className="relative group">
                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
                  <Textarea 
-                   className="pl-9 min-h-[100px] bg-gray-50 border-none font-bold shadow-sm leading-relaxed"
-                   placeholder="Enter full legal address of the company..."
+                   className="pl-9 min-h-[80px] bg-gray-50 border-none font-bold shadow-sm leading-relaxed"
+                   placeholder="Enter full legal address..."
                    required
                    value={formData.address}
                    onChange={(e) => setFormData({...formData, address: e.target.value})}
@@ -137,7 +177,7 @@ export function AddCompanyDialog() {
              </div>
 
              <div className="space-y-2">
-               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Communications Email *</Label>
+               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Billing Email *</Label>
                <div className="relative group">
                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
                  <Input 
@@ -151,17 +191,49 @@ export function AddCompanyDialog() {
                </div>
              </div>
 
-             <div className="space-y-2">
-               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Company Bank Details</Label>
-               <div className="relative group">
-                 <Landmark className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
-                 <Textarea 
-                   className="pl-9 min-h-[80px] bg-gray-50 border-none font-bold shadow-sm text-sm"
-                   placeholder="Bank Name, A/C No, IFSC Code, etc..."
-                   value={formData.bankDetails}
-                   onChange={(e) => setFormData({...formData, bankDetails: e.target.value})}
-                 />
-               </div>
+             {/* Vendor Bank Details */}
+             <div className="space-y-4 border-t pt-4">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-600">Company Bank Details for Invoices</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Bank Name</Label>
+                    <Input 
+                      className="h-11 bg-gray-50 border-none font-bold shadow-sm"
+                      placeholder="e.g. HDFC Bank"
+                      value={formData.bankName}
+                      onChange={(e) => setFormData({...formData, bankName: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Branch Name</Label>
+                    <Input 
+                      className="h-11 bg-gray-50 border-none font-bold shadow-sm"
+                      placeholder="e.g. Rohini Sector 10"
+                      value={formData.branchName}
+                      onChange={(e) => setFormData({...formData, branchName: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Account Number</Label>
+                    <Input 
+                      className="h-11 bg-gray-50 border-none font-bold shadow-sm font-mono tracking-widest"
+                      placeholder="50100234123412"
+                      value={formData.accountNumber}
+                      onChange={(e) => setFormData({...formData, accountNumber: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">IFSC Code</Label>
+                    <Input 
+                      className="h-11 bg-gray-50 border-none font-bold shadow-sm uppercase font-mono tracking-widest"
+                      placeholder="HDFC0001234"
+                      value={formData.ifscCode}
+                      onChange={(e) => setFormData({...formData, ifscCode: e.target.value})}
+                    />
+                  </div>
+                </div>
              </div>
           </div>
 

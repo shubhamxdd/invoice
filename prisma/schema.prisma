@@ -27,13 +27,18 @@ model Company {
   name          String
   gstNumber     String?
   panNumber     String?
+  udyamNumber   String?
+  cin           String?
   sacHsnCode    String?
   address       String?
   state         String?
   contactPerson String?
   contactEmail  String?
   contactPhone  String?
-  bankDetails   String?
+  bankName      String?
+  branchName    String?
+  accountNumber String?
+  ifscCode      String?
   logoPath      String?
   headerPath    String?
   footerPath    String?
@@ -49,7 +54,10 @@ model Bank {
   bankName     String
   branch       String
   address      String?
-  gstNumber    String?
+  state        String?
+  gstNumber     String?
+  panNumber     String?
+  udyamNumber   String?
   geoCoords    String?
   bmRep        String?
   phone        String?

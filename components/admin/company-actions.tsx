@@ -33,8 +33,13 @@ export function CompanyActions({ company }: CompanyActionsProps) {
     address: company.address || "",
     gstNumber: company.gstNumber || "",
     panNumber: company.panNumber || "",
+    cin: (company as any).cin || "",
+    udyamNumber: (company as any).udyamNumber || "",
     contactEmail: company.contactEmail || "",
-    bankDetails: company.bankDetails || "",
+    bankName: (company as any).bankName || "",
+    branchName: (company as any).branchName || "",
+    accountNumber: (company as any).accountNumber || "",
+    ifscCode: (company as any).ifscCode || "",
     isActive: company.isActive,
   });
 
@@ -104,7 +109,7 @@ export function CompanyActions({ company }: CompanyActionsProps) {
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[600px] p-0 border-none shadow-2xl overflow-scroll max-h-[90vh] rounded-3xl">
+        <DialogContent className="sm:max-w-[700px] p-0 border-none shadow-2xl overflow-scroll max-h-[90vh] rounded-3xl">
           <DialogHeader className="p-8 bg-blue-600 text-white">
             <DialogTitle className="text-2xl font-black italic tracking-tighter flex items-center gap-3 leading-none">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 shadow-inner border border-white/10">
@@ -113,7 +118,7 @@ export function CompanyActions({ company }: CompanyActionsProps) {
               Edit Company Profile
             </DialogTitle>
             <DialogDescription className="text-white/70 font-bold uppercase text-[10px] tracking-widest mt-2">
-              Update invoicing entity details and tax registration
+              Update invoicing entity details, tax and bank registration
             </DialogDescription>
           </DialogHeader>
 
@@ -122,7 +127,7 @@ export function CompanyActions({ company }: CompanyActionsProps) {
                <div className="space-y-2">
                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Company Legal Name *</Label>
                  <Input 
-                   className="h-11 bg-gray-50 border-none font-bold"
+                   className="h-11 bg-gray-50 border-none font-bold shadow-sm"
                    required
                    value={formData.name}
                    onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -133,7 +138,7 @@ export function CompanyActions({ company }: CompanyActionsProps) {
                  <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">GST Registration</Label>
                    <Input 
-                     className="h-11 bg-gray-50 border-none font-bold uppercase"
+                     className="h-11 bg-gray-50 border-none font-bold uppercase tracking-widest"
                      value={formData.gstNumber}
                      onChange={(e) => setFormData({...formData, gstNumber: e.target.value})}
                    />
@@ -141,9 +146,28 @@ export function CompanyActions({ company }: CompanyActionsProps) {
                  <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Income Tax PAN</Label>
                    <Input 
-                     className="h-11 bg-gray-50 border-none font-bold uppercase"
+                     className="h-11 bg-gray-50 border-none font-bold uppercase tracking-widest"
                      value={formData.panNumber}
                      onChange={(e) => setFormData({...formData, panNumber: e.target.value})}
+                   />
+                 </div>
+               </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">CIN (Corporate No)</Label>
+                   <Input 
+                     className="h-11 bg-gray-50 border-none font-bold uppercase tracking-wider"
+                     value={formData.cin}
+                     onChange={(e) => setFormData({...formData, cin: e.target.value})}
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">UDYAM Registration</Label>
+                   <Input 
+                     className="h-11 bg-gray-50 border-none font-bold uppercase tracking-wider"
+                     value={formData.udyamNumber}
+                     onChange={(e) => setFormData({...formData, udyamNumber: e.target.value})}
                    />
                  </div>
                </div>
@@ -151,46 +175,77 @@ export function CompanyActions({ company }: CompanyActionsProps) {
                <div className="space-y-2">
                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Registered Office Address</Label>
                  <Textarea 
-                   className="min-h-[100px] bg-gray-50 border-none font-bold"
+                   className="min-h-[80px] bg-gray-50 border-none font-bold leading-relaxed shadow-sm"
                    value={formData.address}
                    onChange={(e) => setFormData({...formData, address: e.target.value})}
                  />
                </div>
 
                <div className="space-y-2">
-                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Communications Email</Label>
+                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Billing Email</Label>
                  <Input 
                    type="email"
-                   className="h-11 bg-gray-50 border-none font-bold"
+                   className="h-11 bg-gray-50 border-none font-bold shadow-sm"
                    value={formData.contactEmail}
                    onChange={(e) => setFormData({...formData, contactEmail: e.target.value})}
                  />
                </div>
 
-               <div className="space-y-2">
-                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Company Bank Details</Label>
-                 <Textarea 
-                   className="min-h-[80px] bg-gray-50 border-none font-bold text-sm"
-                   placeholder="Bank Name, A/C No, IFSC Code, etc..."
-                   value={formData.bankDetails}
-                   onChange={(e) => setFormData({...formData, bankDetails: e.target.value})}
-                 />
+               {/* Vendor Bank Details */}
+               <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Company Bank Details for Invoices</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Bank Name</Label>
+                      <Input 
+                        className="h-11 bg-gray-50 border-none font-bold shadow-sm"
+                        value={formData.bankName}
+                        onChange={(e) => setFormData({...formData, bankName: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Branch Name</Label>
+                      <Input 
+                        className="h-11 bg-gray-50 border-none font-bold shadow-sm"
+                        value={formData.branchName}
+                        onChange={(e) => setFormData({...formData, branchName: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Account Number</Label>
+                      <Input 
+                        className="h-11 bg-gray-50 border-none font-bold shadow-sm font-mono tracking-widest"
+                        value={formData.accountNumber}
+                        onChange={(e) => setFormData({...formData, accountNumber: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">IFSC Code</Label>
+                      <Input 
+                        className="h-11 bg-gray-50 border-none font-bold shadow-sm uppercase font-mono tracking-widest"
+                        value={formData.ifscCode}
+                        onChange={(e) => setFormData({...formData, ifscCode: e.target.value})}
+                      />
+                    </div>
+                  </div>
                </div>
                
-               <div className="flex items-center gap-2">
+               <div className="flex items-center gap-2 border-t pt-4">
                  <input 
                    type="checkbox" 
                    id="isActive" 
-                   className="h-4 w-4"
+                   className="h-4 w-4 accent-blue-600"
                    checked={formData.isActive}
                    onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
                  />
-                 <Label htmlFor="isActive" className="text-xs font-bold uppercase tracking-widest text-gray-400">Company is active</Label>
+                 <Label htmlFor="isActive" className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Entity is active</Label>
                </div>
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="submit" className="w-full font-black h-12 uppercase tracking-[0.2em] shadow-lg bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+              <Button type="submit" className="w-full font-black h-12 uppercase tracking-[0.2em] shadow-lg shadow-blue-600/20 bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "UPDATE PROFILE"}
               </Button>
             </DialogFooter>
