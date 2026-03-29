@@ -74,7 +74,7 @@ export async function generateTemplateExcelInvoice(records: any[], company: any,
       
     const bufferData = await fs.readFile(templatePath);
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(bufferData);
+    await workbook.xlsx.load(bufferData as any);
     const sheet = workbook.getWorksheet(1);
     if (!sheet) return null;
 
