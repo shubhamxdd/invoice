@@ -8,7 +8,6 @@ import {
   Users,
   Building2,
   Landmark,
-  FileText,
   BarChart3,
   Settings,
   Upload,
@@ -34,7 +33,6 @@ const adminLinks = [
   { name: "User Management", href: "/admin/users", icon: Users },
   { name: "Company Management", href: "/admin/companies", icon: Building2 },
   { name: "Bank Management", href: "/admin/banks", icon: Landmark },
-  { name: "Bank Templates", href: "/admin/templates", icon: FileText },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];

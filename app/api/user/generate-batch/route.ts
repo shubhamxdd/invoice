@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import JSZip from "jszip";
-import { generateExcelInvoice, generatePdfInvoice, findBestTemplate } from "@/lib/invoice-engine";
+import { generateExcelInvoice, generatePdfInvoice } from "@/lib/invoice-engine";
 import fs from "fs/promises";
 import path from "path";
 
@@ -37,11 +37,6 @@ export async function POST(req: NextRequest) {
     
     if (records.length === 0) return NextResponse.json({ error: "No records found matching filters" }, { status: 400 });
 
-    // Fetch all active templates for fuzzy matching once to avoid DB spam
-    const allTemplates = await prisma.bankTemplate.findMany({
-      where: { isActive: true },
-      include: { bank: true }
-    });
 
     // 2. Group records as requested
     const groups: Record<string, any[]> = {};
@@ -82,15 +77,12 @@ export async function POST(req: NextRequest) {
         ? `${sanitizedBank}/${sanitizedBranch}`
         : sanitizedBank;
 
-      // USE NEW FUZZY MATCHER
-      const bankTemplate = findBestTemplate(bankName, allTemplates);
 
       // PDF Output (Neural Clean-Fill)
       if (options.format === "pdf" || options.format === "both") {
         const pdfFilename = `${filenameBase}.pdf`;
         const pdfBuffer = await generatePdfInvoice(groupRecords, company, pdfFilename, { 
-            ...options, 
-            template: bankTemplate 
+            ...options
         });
         
         if (pdfBuffer) {
@@ -102,8 +94,7 @@ export async function POST(req: NextRequest) {
       if (options.format === "excel" || options.format === "both") {
         const excelFilename = `${filenameBase}.xlsx`;
         const excelBuffer = await generateExcelInvoice(groupRecords, company, excelFilename, { 
-            ...options, 
-            template: bankTemplate 
+            ...options
         });
         
         if (excelBuffer) {
