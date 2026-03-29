@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import JSZip from "jszip";
-import { generateExcelInvoice, generatePdfInvoice } from "@/lib/invoice-engine";
+import { generateExcelInvoice, generatePdfInvoice, findBestTemplate } from "@/lib/invoice-engine";
 import fs from "fs/promises";
 import path from "path";
 
@@ -30,8 +30,18 @@ export async function POST(req: NextRequest) {
       if (filters.dateTo) where.initiationDate.lte = filters.dateTo;
     }
 
-    const records = await prisma.misRecord.findMany({ where });
+    const records = await prisma.misRecord.findMany({ 
+      where,
+      orderBy: { rowIndex: 'asc' }
+    });
+    
     if (records.length === 0) return NextResponse.json({ error: "No records found matching filters" }, { status: 400 });
+
+    // Fetch all active templates for fuzzy matching once to avoid DB spam
+    const allTemplates = await prisma.bankTemplate.findMany({
+      where: { isActive: true },
+      include: { bank: true }
+    });
 
     // 2. Group records as requested
     const groups: Record<string, any[]> = {};
@@ -52,8 +62,7 @@ export async function POST(req: NextRequest) {
     // 3. Initiate ZIP
     const zip = new JSZip();
     const dateStr = new Date().toISOString().split('T')[0];
-    const timeStr = new Date().toLocaleTimeString('en-IN', { hour12: false }).replace(/:/g, '');
-    const timestamp = `${dateStr}_${timeStr}`;
+    const timestamp = Date.now().toString();
 
     const batchInvoiceNo = `INV-${dateStr.replace(/-/g, '')}-${Math.floor(Math.random() * 8999) + 1000}`;
 
@@ -62,50 +71,52 @@ export async function POST(req: NextRequest) {
       const rawBankName = groupRecords[0].bankName || "Unknown";
       const bankName = rawBankName.trim();
       const cityName = groupRecords[0].city || "Unknown";
+      
       const sanitizedBank = bankName.replace(/[^a-z0-9]/gi, '_');
       const sanitizedCity = cityName.replace(/[^a-z0-9]/gi, '_');
       
-      const filenameBase = `invoice_${sanitizedBank}_${sanitizedCity}_${timestamp}`;
+      const filenameBase = `Invoice_${sanitizedBank}_${sanitizedCity}_${timestamp}`;
 
-      // Fetch dynamic template for this bank (Clean search)
-      const bankTemplate = await prisma.bankTemplate.findFirst({
-        where: { 
-          bank: { 
-            bankName: { contains: bankName }
-          }, 
-          isActive: true,
-          extractedFields: { not: "[]" }
-        },
-        orderBy: { updatedAt: 'desc' }
-      });
+      // USE NEW FUZZY MATCHER
+      const bankTemplate = findBestTemplate(bankName, allTemplates);
 
-      // PDF Output
-      if (options.format === "pdf" || options.format === "both" || options.format === "neural_pdf") {
+      // PDF Output (Neural Clean-Fill)
+      if (options.format === "pdf" || options.format === "both") {
         const pdfFilename = `${filenameBase}.pdf`;
-        const pdfBuffer = await generatePdfInvoice(groupRecords, company, pdfFilename, { ...options, template: bankTemplate });
+        const pdfBuffer = await generatePdfInvoice(groupRecords, company, pdfFilename, { 
+            ...options, 
+            template: bankTemplate 
+        });
+        
         if (pdfBuffer) {
-            zip.file(`${sanitizedBank}/${sanitizedCity}/pdf/${pdfFilename}`, pdfBuffer);
+            zip.file(`${sanitizedBank}/${pdfFilename}`, pdfBuffer);
         }
       }
 
-      // Excel Output
+      // Excel Output (High Fidelity)
       if (options.format === "excel" || options.format === "both") {
         const excelFilename = `${filenameBase}.xlsx`;
-        const excelBuffer = await generateExcelInvoice(groupRecords, company, excelFilename, { ...options, template: bankTemplate });
-        zip.file(`${sanitizedBank}/${sanitizedCity}/excel/${excelFilename}`, excelBuffer);
+        const excelBuffer = await generateExcelInvoice(groupRecords, company, excelFilename, { 
+            ...options, 
+            template: bankTemplate 
+        });
+        
+        if (excelBuffer) {
+            zip.file(`${sanitizedBank}/${excelFilename}`, excelBuffer);
+        }
       }
     }
 
     const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
     
-    // 5. Save ZIP to filesystem
+    // 5. Save ZIP to filesystem for history
     const reportDir = path.join(process.cwd(), "uploads", "invoices");
     await fs.mkdir(reportDir, { recursive: true });
     const zipFilename = `${batchInvoiceNo}.zip`;
     const zipFilePath = path.join(reportDir, zipFilename);
     await fs.writeFile(zipFilePath, zipBuffer);
 
-    // 6. Save batch in database
+    // 6. Save batch record in database
     const totalBatchAmount = records.reduce((sum, r) => sum + (r.total || 0), 0);
     await prisma.invoiceBatch.create({
       data: {
@@ -113,15 +124,10 @@ export async function POST(req: NextRequest) {
         companyId,
         generatedBy: session.user.id!,
         outputFormat: options.format,
-        filterBank: filters.bank !== "all" ? filters.bank : null,
-        filterBranch: filters.branch !== "all" ? filters.branch : null,
-        filterDateFrom: filters.dateFrom || null,
-        filterDateTo: filters.dateTo || null,
-        totalAmount: totalBatchAmount,
         recordCount: records.length,
+        totalAmount: totalBatchAmount,
         status: "generated",
-        includeLogo: options.includeLogo,
-        zipPath: zipFilename, // Store relative path
+        zipPath: zipFilename,
       },
     });
 
@@ -134,7 +140,8 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error("Batch generation error:", error);
+    console.error("Critical Generation Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

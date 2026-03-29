@@ -32,7 +32,16 @@ export function TemplateConfigForm({ template }: TemplateConfigFormProps) {
   const [fields, setFields] = useState(initialFields);
 
   const addField = () => {
-    const newField = { key: `field_${Date.now()}`, label: "New Field", dataType: "string", x: 0.5, y: 0.5, page: 1 };
+    const newField = { 
+      key: `field_${Date.now()}`, 
+      label: "New Field", 
+      dataType: "string", 
+      x: 0.5, 
+      y: 0.5, 
+      width: 0.1, 
+      height: 0.03, 
+      page: 1 
+    };
     setFields([...fields, newField]);
     setSelectedKey(newField.key);
   };
@@ -93,7 +102,7 @@ export function TemplateConfigForm({ template }: TemplateConfigFormProps) {
                 <div className="flex-1 space-y-2">
                    <Label className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Type</Label>
                    <select 
-                    className="h-11 w-full bg-white border-none font-bold rounded-xl px-3 outline-none"
+                    className="h-11 w-full bg-white border-none font-bold rounded-xl px-3 outline-none tabular-nums"
                     value={field.type || 'header'}
                     onChange={(e) => updateField(index, "type", e.target.value)}
                    >
@@ -125,23 +134,48 @@ export function TemplateConfigForm({ template }: TemplateConfigFormProps) {
               </div>
               
               {selectedKey === field.key && (
-                  <div className="mt-4 pt-4 border-t border-indigo-100 flex items-center justify-between animate-in slide-in-from-top-2">
-                      <div className="flex items-center gap-4">
-                          <div className="space-y-1">
-                            <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Page Anchor</p>
-                            <p className="text-xs font-black italic text-indigo-900 leading-none">P{field.page}</p>
-                          </div>
-                          <div className="space-y-1 border-l pl-4 border-indigo-100">
-                            <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Neural Coords</p>
-                            <p className="text-xs font-black italic text-indigo-900 leading-none">{(field.x * 100).toFixed(1)}%, {(field.y * 100).toFixed(1)}%</p>
-                          </div>
+                  <div className="mt-6 pt-6 border-t border-indigo-100 animate-in slide-in-from-top-2 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                           <Label className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Width (%)</Label>
+                           <Input 
+                            type="number"
+                            step="0.01"
+                            className="h-9 bg-white border-none font-bold rounded-lg text-xs"
+                            value={field.width || 0.1}
+                            onChange={(e) => updateField(index, "width", parseFloat(e.target.value))}
+                           />
+                        </div>
+                        <div className="space-y-2">
+                           <Label className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Height (%)</Label>
+                           <Input 
+                            type="number"
+                            step="0.01"
+                            className="h-9 bg-white border-none font-bold rounded-lg text-xs"
+                            value={field.height || 0.03}
+                            onChange={(e) => updateField(index, "height", parseFloat(e.target.value))}
+                           />
+                        </div>
                       </div>
-                      <Badge variant="outline" className={cn(
-                        "text-[9px] font-black uppercase border-none py-1 text-white",
-                        field.type === 'table_column' ? 'bg-amber-500' : 'bg-indigo-600'
-                      )}>
-                        {field.type === 'table_column' ? 'DYNAMIC COLUMN' : 'STATIC ANCHOR'}
-                      </Badge>
+
+                      <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                              <div className="space-y-1">
+                                <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Page Anchor</p>
+                                <p className="text-xs font-black italic text-indigo-900 leading-none">P{field.page}</p>
+                              </div>
+                              <div className="space-y-1 border-l pl-4 border-indigo-100">
+                                <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Neural Coords</p>
+                                <p className="text-xs font-black italic text-indigo-900 leading-none">{(field.x * 100).toFixed(1)}%, {(field.y * 100).toFixed(1)}%</p>
+                              </div>
+                          </div>
+                          <Badge variant="outline" className={cn(
+                            "text-[9px] font-black uppercase border-none py-1 text-white",
+                            field.type === 'table_column' ? 'bg-amber-500' : 'bg-indigo-600'
+                          )}>
+                            {field.type === 'table_column' ? 'DYNAMIC COLUMN' : 'STATIC ANCHOR'}
+                          </Badge>
+                      </div>
                   </div>
               )}
             </div>

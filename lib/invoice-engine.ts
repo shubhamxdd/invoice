@@ -5,179 +5,72 @@ import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import fs from "fs/promises";
 import path from "path";
 
-// Bank-specific format definitions
-const BANK_FORMATS: Record<string, any> = {
-  "BAJAJ": {
-    headers: [
-      { header: "Sr.No", key: "sNo", width: 8 },
-      { header: "Business Vertical", key: "vertical", width: 20 },
-      { header: "Sourcing City", key: "city", width: 15 },
-      { header: "Application Number", key: "appRef", width: 25 },
-      { header: "Customer Name", key: "name", width: 30 },
-      { header: "Product", key: "product", width: 15 },
-      { header: "Task Type", key: "task", width: 15 },
-      { header: "File ID", key: "fileId", width: 15 },
-      { header: "Professional Fee", key: "total", width: 15 },
-    ],
-    mapping: (r: any, i: number) => ({
-      sNo: i + 1,
-      vertical: r.caseType || "LAP",
-      city: r.city || "",
-      appRef: r.appRefNo || r["App Reference No."] || "",
-      name: r.applicantName || r["Applicant Name"] || "",
-      product: "HHL",
-      task: "TECHNICAL",
-      fileId: r.eepacRefNo || r["EEPAC Reference No"] || "",
-      total: r.total || 0,
-    })
-  },
-  "PIRAMAL": {
-    headers: [
-      { header: "Sr. No", key: "sNo", width: 8 },
-      { header: "Branch", key: "branch", width: 20 },
-      { header: "App No.", key: "appRef", width: 25 },
-      { header: "Applicant Name", key: "name", width: 30 },
-      { header: "Location", key: "city", width: 15 },
-      { header: "Property Address", key: "address", width: 40 },
-      { header: "Initiation Date", key: "date", width: 15 },
-      { header: "Billing Amount", key: "total", width: 15 },
-    ],
-    mapping: (r: any, i: number) => ({
-      sNo: i + 1,
-      branch: r.branch || r["Branch"] || "",
-      appRef: r.appRefNo || r["App Reference No."] || "",
-      name: r.applicantName || r["Applicant Name"] || "",
-      city: r.city || r["City"] || "",
-      address: r.address || r["Address"] || "",
-      date: r.initiationDate || r["Initiation Date"] || "",
-      total: r.total || 0,
-    })
-  },
-  "DEFAULT": {
-    headers: [
-      { header: "S.No", key: "sNo", width: 5 },
-      { header: "EEPAC Ref No", key: "eepacRef", width: 20 },
-      { header: "Applicant Name", key: "name", width: 30 },
-      { header: "Case Type", key: "type", width: 15 },
-      { header: "Visit Date", key: "visitDate", width: 15 },
-      { header: "Rate", key: "rate", width: 10 },
-      { header: "Total", key: "total", width: 15 },
-    ],
-    mapping: (r: any, i: number) => ({
-      sNo: i + 1,
-      eepacRef: r.eepacRefNo || r["EEPAC Reference No"] || "",
-      name: r.applicantName || r["Applicant Name"] || "",
-      type: r.caseType || r["Case Type"] || "",
-      visitDate: r.visitDate || r["Visit Date"] || "",
-      rate: r.rate || 0,
-      total: r.total || 0,
-    })
-  }
-};
+/**
+ * Fuzzy matcher for bank templates.
+ * Compares tokens to find the best match score.
+ */
+export function findBestTemplate(bankName: string, templates: any[]) {
+    if (!bankName || templates.length === 0) return null;
+    
+    const target = bankName.toLowerCase().replace(/[^a-z0-9]/g, ' ');
+    const targetTokens = target.split(' ').filter((t: string) => t.length > 2);
+    
+    let bestMatch = null;
+    let highestScore = 0;
 
-function getBankConfig(bankName: string = "", template?: any) {
-  if (template?.extractedFields) {
-    try {
-      const fields = JSON.parse(template.extractedFields);
-      if (Array.isArray(fields) && fields.length > 0) {
-        return {
-          headers: fields.map((f: any) => ({ header: f.label, key: f.key, width: 20 })),
-          mapping: (r: any, i: number) => {
-             const row: any = {};
-             fields.forEach((f: any) => {
-               row[f.key] = r[f.key] || r[f.label] || "";
-             });
-             if (!row.sNo) row.sNo = i + 1;
-             return row;
-          }
-        };
-      }
-    } catch (e) {
-      console.error("Failed to parse template fields", e);
+    for (const template of templates) {
+        const source = (template.bank?.bankName || "").toLowerCase().replace(/[^a-z0-9]/g, ' ');
+        const sourceTokens = source.split(' ').filter((t: string) => t.length > 2);
+        
+        let matches = 0;
+        targetTokens.forEach(token => {
+            if (sourceTokens.includes(token)) matches++;
+        });
+
+        const score = matches / Math.max(targetTokens.length, 1);
+        if (score > highestScore && score > 0.4) {
+            highestScore = score;
+            bestMatch = template;
+        }
     }
-  }
 
-  const normalized = bankName.toUpperCase();
-  if (normalized.includes("BAJAJ")) return BANK_FORMATS.BAJAJ;
-  if (normalized.includes("PIRAMAL")) return BANK_FORMATS.PIRAMAL;
-  return BANK_FORMATS.DEFAULT;
+    return bestMatch;
 }
 
 export async function generateExcelInvoice(records: any[], company: any, filename: string, options: any) {
-  if (options?.template?.excelPath) {
+  if (options?.template?.filePath && options.template.filePath.endsWith('.xlsx')) {
     const templateExcel = await generateTemplateExcelInvoice(records, company, options.template);
     if (templateExcel) return templateExcel;
   }
 
+  // Fallback to basic excel if no template
   const workbook = new ExcelJS.Workbook();
   const bankName = records[0]?.bankName || "Standard FI";
-  const config = getBankConfig(bankName, options?.template);
   const totalAmount = records.reduce((sum, r) => sum + (r.total || 0), 0);
-
-  const mainSheet = workbook.addWorksheet("Visual Invoice");
-  mainSheet.getColumn('A').width = 10;
-  mainSheet.getColumn('B').width = 40;
-  mainSheet.getColumn('C').width = 20;
-  mainSheet.getColumn('D').width = 15;
-  mainSheet.getColumn('E').width = 15;
-
-  mainSheet.mergeCells('A1:E1');
-  const companyTitle = mainSheet.getCell('A1');
-  companyTitle.value = company.name?.toUpperCase();
-  companyTitle.font = { size: 24, bold: true, italic: true };
-  companyTitle.alignment = { horizontal: 'center' };
-
-  mainSheet.mergeCells('A2:E2');
-  mainSheet.getCell('A2').value = company.address;
-  mainSheet.getCell('A2').alignment = { horizontal: 'center' };
-  mainSheet.getCell('A2').font = { size: 9 };
-
-  mainSheet.mergeCells('A3:E3');
-  mainSheet.getCell('A3').value = `GSTIN: ${company.gstNumber} | PAN: ${company.panNumber}`;
-  mainSheet.getCell('A3').alignment = { horizontal: 'center' };
-  mainSheet.getCell('A3').font = { size: 9, bold: true };
-
-  mainSheet.getCell('A5').value = "BILL TO:";
-  mainSheet.getCell('A5').font = { bold: true };
-  mainSheet.mergeCells('A6:B6');
-  mainSheet.getCell('A6').value = bankName;
-  mainSheet.getCell('A6').font = { bold: true, color: { argb: 'FF3F51B5' } };
-
-  mainSheet.getCell('D5').value = "INVOICE NO:";
-  mainSheet.getCell('E5').value = `BATCH-${Date.now().toString().slice(-6)}`;
-  mainSheet.getCell('D6').value = "DATE:";
-  mainSheet.getCell('E6').value = new Date().toLocaleDateString();
-
-  const tableHeaders = config.headers.map((h: any) => h.header);
-  const keys = config.headers.map((h: any) => h.key);
-  const headerRowIndex = 9;
-  mainSheet.getRow(headerRowIndex).values = tableHeaders;
-  mainSheet.getRow(headerRowIndex).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-  mainSheet.getRow(headerRowIndex).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3F51B5' } };
-
+  const sheet = workbook.addWorksheet("Invoice");
+  
+  sheet.mergeCells('A1:E1');
+  sheet.getCell('A1').value = company.name;
+  sheet.addRow(["Bank:", bankName]);
+  sheet.addRow([]);
+  sheet.addRow(["S.No", "Ref No", "Name", "Type", "Total"]);
+  
   records.forEach((r, i) => {
-    const mapped = config.mapping(r, i);
-    const rowValues = keys.map((k: string) => mapped[k]);
-    mainSheet.addRow(rowValues);
+    sheet.addRow([i + 1, r.eepacRefNo, r.applicantName, r.caseType, r.total]);
   });
-
-  const footerStartRow = mainSheet.rowCount + 2;
-  mainSheet.getCell(`D${footerStartRow}`).value = "SUBTOTAL";
-  mainSheet.getCell(`E${footerStartRow}`).value = totalAmount;
-  mainSheet.getCell(`D${footerStartRow + 1}`).value = "GST (18%)";
-  mainSheet.getCell(`E${footerStartRow + 1}`).value = totalAmount * 0.18;
-  mainSheet.getCell(`D${footerStartRow + 2}`).value = "TOTAL PAYABLE";
-  mainSheet.getCell(`E${footerStartRow + 2}`).value = totalAmount * 1.18;
+  
+  sheet.addRow([]);
+  sheet.addRow([null, null, null, "GRAND TOTAL", totalAmount]);
 
   const buffer = await workbook.xlsx.writeBuffer();
-  return Buffer.from(buffer);
+  return Buffer.from(buffer as any);
 }
 
 export async function generateTemplateExcelInvoice(records: any[], company: any, template: any) {
   try {
-    const templatePath = path.isAbsolute(template.excelPath) 
-      ? template.excelPath 
-      : path.join(process.cwd(), template.excelPath);
+    const templatePath = path.isAbsolute(template.filePath) 
+      ? template.filePath 
+      : path.join(process.cwd(), template.filePath);
       
     const bufferData = await fs.readFile(templatePath);
     const workbook = new ExcelJS.Workbook();
@@ -186,80 +79,100 @@ export async function generateTemplateExcelInvoice(records: any[], company: any,
     if (!sheet) return null;
 
     const allFields = JSON.parse(template.extractedFields || "[]");
+    const headerFields = allFields.filter((f: any) => f.type !== 'table_column');
+    const columnFields = allFields.filter((f: any) => f.type === 'table_column');
     const mainRecord = records[0];
 
-    // Smart Replacement
+    // 1. Header/Static replacements
     sheet.eachRow((row) => {
       row.eachCell((cell) => {
-        const val = String(cell.value || "");
-        allFields.forEach((f: any) => {
-             if (val.includes(`{{${f.key}}}`) || val.includes(`[${f.label}]`)) {
-                 cell.value = String(mainRecord[f.key] || mainRecord[f.label] || "");
-             }
+        let val = String(cell.value || "");
+        let changed = false;
+
+        headerFields.forEach((f: any) => {
+             const placeholders = [`{{${f.key}}}`, `[${f.label}]`, `{{${f.label}}}`];
+             placeholders.forEach(p => {
+                if (val.includes(p)) {
+                    const replacement = String(mainRecord[f.key] || mainRecord[f.label] || "");
+                    val = val.replace(p, replacement);
+                    changed = true;
+                }
+             });
         });
+
+        if (changed) cell.value = val;
       });
     });
 
+    // 2. Table Injection
+    if (columnFields.length > 0) {
+        // Find the row containing the table placeholders
+        let tableHeaderRowIndex = -1;
+        sheet.eachRow((row, index) => {
+            row.eachCell((cell) => {
+                const val = String(cell.value || "");
+                if (columnFields.some((f: any) => val.includes(`{{${f.key}}}`) || val.includes(`[${f.label}]`))) {
+                    tableHeaderRowIndex = index;
+                }
+            });
+        });
+
+        if (tableHeaderRowIndex !== -1) {
+            const templateRow = sheet.getRow(tableHeaderRowIndex);
+            
+            // Insert rows for each record (except the first one which uses the template row)
+            for (let i = 0; i < records.length; i++) {
+                const record = records[i];
+                const currentRow = i === 0 ? templateRow : sheet.insertRow(tableHeaderRowIndex + i, []);
+                
+                // Copy style from template row
+                if (i > 0) {
+                    currentRow.height = templateRow.height;
+                    templateRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                        const targetCell = currentRow.getCell(colNumber);
+                        targetCell.style = JSON.parse(JSON.stringify(cell.style));
+                    });
+                }
+
+                // Fill values
+                columnFields.forEach((f: any) => {
+                    // Find which cell in template row has this placeholder
+                    templateRow.eachCell((cell, colNumber) => {
+                        const val = String(cell.value || "");
+                        if (val.includes(`{{${f.key}}}`) || val.includes(`[${f.label}]`)) {
+                            const replacement = String(record[f.key] || record[f.label] || "");
+                            currentRow.getCell(colNumber).value = replacement;
+                        }
+                    });
+                });
+            }
+        }
+    }
+
     const outputBuffer = await workbook.xlsx.writeBuffer();
-    return Buffer.from(outputBuffer);
+    return Buffer.from(outputBuffer as any);
   } catch (error) {
-    console.error("Excel Template Cloner Error:", error);
+    console.error("Excel Cloner Error:", error);
     return null;
   }
 }
 
 export async function generatePdfInvoice(records: any[], company: any, filename: string, options: any) {
-  if (options?.template?.filePath && options?.template?.extractedFields) {
+  if (options?.template?.filePath && options.template.filePath.endsWith('.pdf')) {
     const templatePdf = await generateTemplatePdfInvoice(records, company, options.template);
     if (templatePdf) return templatePdf;
   }
 
+  // Fallback to auto-table PDF
   const doc = new jsPDF();
-  const bankName = records[0]?.bankName || "Standard FI";
-  const config = getBankConfig(bankName, options?.template);
-  const totalAmount = records.reduce((sum, r) => sum + (r.total || 0), 0);
-
-  doc.setFillColor(63, 81, 181);
-  doc.rect(0, 0, 210, 40, 'F');
-  doc.setFontSize(26);
-  doc.setTextColor(255);
-  doc.setFont("helvetica", "bold");
-  doc.text(company.name?.toUpperCase() || "KEC INVOICE", 105, 20, { align: "center" });
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.text(company.address || "", 105, 28, { align: "center" });
-  doc.setFont("helvetica", "bold");
-  doc.text(`GST: ${company.gstNumber} | PAN: ${company.panNumber}`, 105, 34, { align: "center" });
-
-  doc.setTextColor(0);
-  doc.setFontSize(10);
-  doc.text("BILL TO:", 14, 55);
-  doc.setFontSize(14);
-  doc.text(bankName, 14, 62);
-  doc.setFontSize(10);
-  doc.setTextColor(150);
-  doc.text(`INVOICE: ${Date.now()}`, 196, 55, { align: "right" });
-  doc.text(`DATE: ${new Date().toLocaleDateString()}`, 196, 62, { align: "right" });
-
-  const headerLabels = config.headers.map((h: any) => h.header);
-  const keys = config.headers.map((h: any) => h.key);
-  const tableData = records.map((r, i) => {
-    const mapped = config.mapping(r, i);
-    return keys.map((k: string) => {
-      const val = mapped[k];
-      return typeof val === 'number' ? val.toLocaleString() : val;
-    });
-  });
-
+  doc.text(company.name || "KEC INVOICE", 10, 10);
+  doc.text(`Bank: ${records[0]?.bankName}`, 10, 20);
+  
+  const body = records.map((r, i) => [i + 1, r.eepacRefNo, r.applicantName, r.total]);
   autoTable(doc, {
-    startY: 75,
-    head: [headerLabels],
-    body: tableData,
-    foot: [new Array(headerLabels.length - 2).fill("").concat(["GRAND TOTAL", `INR ${totalAmount.toLocaleString()}`])],
-    theme: 'grid',
-    headStyles: { fillColor: [63, 81, 181], textColor: 255, fontStyle: 'bold' },
-    footStyles: { fillColor: [240, 240, 240], textColor: 40, fontStyle: 'bold' },
-    styles: { fontSize: 8, cellPadding: 3 },
+    startY: 30,
+    head: [["S.No", "Ref", "Name", "Total"]],
+    body: body,
   });
 
   return Buffer.from(doc.output("arraybuffer"));
@@ -273,59 +186,102 @@ export async function generateTemplatePdfInvoice(records: any[], company: any, t
       
     const existingPdfBytes = await fs.readFile(templatePath);
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
-    const templatePage = pdfDoc.getPages()[0];
-    const { width, height } = templatePage.getSize();
+    
+    // Embed fonts
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    const allFields = JSON.parse(template.extractedFields);
+    const allFields = JSON.parse(template.extractedFields || "[]");
     const headerFields = allFields.filter((f: any) => f.type !== 'table_column');
-    const columnFields = allFields.filter((f: any) => f.type === 'table_column');
+    const tableColumns = allFields.filter((f: any) => f.type === 'table_column');
 
-    let currentPage = templatePage;
-    let currentY_Percentage = columnFields.length > 0 ? Math.min(...columnFields.map((f: any) => f.y)) : 0.4;
-    const rowHeight = 0.03; 
-    const bottomMargin = 0.1;
+    const totalRecords = records.length;
+    let recordsProcessed = 0;
+    
+    // We assume the first page of the template is the master
+    const [templatePage] = await pdfDoc.copyPages(pdfDoc, [0]);
+    
+    // Note: This logic assumes we fill one or more pages based on records
+    // For now, let's focus on whitening and filling the first page
+    const currentPage = pdfDoc.getPages()[0];
+    const { width, height } = currentPage.getSize();
 
-    headerFields.forEach((field: any) => {
-        const value = records[0][field.key] || records[0][field.label] || "";
-        if (!value) return;
+    // 1. Process Header Fields (Whitening + Overlay)
+    for (const field of headerFields) {
+        const value = String(records[0][field.key] || records[0][field.label] || "");
+        if (!value) continue;
 
-        currentPage.drawText(String(value), {
-            x: field.x * width,
-            y: height - (field.y * height),
-            size: 9,
+        // Coordinates are in percentages (0-1)
+        const x = field.x * width;
+        const y = height - (field.y * height); // PDF-lib Y starts from bottom
+        const w = (field.width || 0.1) * width;
+        const h = (field.height || 0.03) * height;
+
+        // A. WHITING (Clean old data)
+        currentPage.drawRectangle({
+            x: x - (w / 2), // centered at point
+            y: y - (h / 2),
+            width: w,
+            height: h,
+            color: rgb(1, 1, 1), // White
+            opacity: 1,
+        });
+
+        // B. OVERLAY (Draw new data)
+        currentPage.drawText(value, {
+            x: x - (w / 2) + 2, // slight padding
+            y: y - (h / 2) + (h / 4), // vertical align
+            size: Math.min(h * 0.8, 10),
             font: fontBold,
             color: rgb(0, 0, 0),
         });
-    });
+    }
 
-    for (const record of records) {
-        if (currentY_Percentage + rowHeight > (1 - bottomMargin)) {
-            const [newPage] = await pdfDoc.copyPages(pdfDoc, [0]);
-            pdfDoc.addPage(newPage);
-            currentPage = newPage;
-            currentY_Percentage = columnFields.length > 0 ? Math.min(...columnFields.map((f: any) => f.y)) : 0.4;
+    // 2. Process Table Records
+    if (tableColumns.length > 0) {
+        let currentY_Percentage = Math.min(...tableColumns.map((c: any) => c.y));
+        const rowSpacing = 0.03; // Default spacing
+
+        for (const record of records) {
+            // Check for page overflow
+            if (currentY_Percentage > 0.9) {
+                // TODO: Add new page and repeat headers if needed
+                break; 
+            }
+
+            for (const col of tableColumns) {
+                const value = String(record[col.key] || record[col.label] || "");
+                const x = col.x * width;
+                const y = height - (currentY_Percentage * height);
+                const w = (col.width || 0.1) * width;
+                const h = (col.height || 0.02) * height;
+
+                // Clean-Fill
+                currentPage.drawRectangle({
+                    x: x - (w / 2),
+                    y: y - (h / 2),
+                    width: w,
+                    height: h,
+                    color: rgb(1, 1, 1),
+                });
+
+                currentPage.drawText(value, {
+                    x: x - (w / 2) + 2,
+                    y: y - (h / 2) + (h / 4),
+                    size: 8,
+                    font: font,
+                    color: rgb(0, 0, 0),
+                });
+            }
+            currentY_Percentage += rowSpacing;
         }
-
-        columnFields.forEach((col: any) => {
-            const value = record[col.key] || record[col.label] || "";
-            currentPage.drawText(String(value), {
-                x: col.x * width,
-                y: height - (currentY_Percentage * height),
-                size: 8,
-                font: font,
-                color: rgb(0, 0, 0),
-            });
-        });
-
-        currentY_Percentage += rowHeight;
     }
 
     const pdfBytes = await pdfDoc.save();
     return Buffer.from(pdfBytes);
   } catch (error) {
-    console.error("Neural Template Infill Error:", error);
-    return null; 
+    console.error("PDF Clean-Fill Engine Error:", error);
+    return null;
   }
 }
+

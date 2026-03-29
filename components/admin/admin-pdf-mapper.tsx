@@ -114,22 +114,27 @@ export function AdminPdfMapper({ file, fields, onFieldsChange, selectedKey, onSe
                     style={{
                       left: `${field.x * 100}%`,
                       top: `${field.y * 100}%`,
-                      width: '20px', // or field.width
-                      height: '20px', // or field.height
+                      width: field.width ? `${field.width * scale * 100}%` : '40px',
+                      height: field.height ? `${field.height * scale * 100}%` : '20px',
                     }}
                     className={cn(
                         "absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-auto cursor-pointer transition-all",
-                        selectedKey === field.key ? "z-20 scale-125 shake-subtle" : "z-10 h-4 w-4"
+                        selectedKey === field.key ? "z-20 ring-2 ring-indigo-600 bg-indigo-50/40" : "z-10 bg-gray-400/20"
                     )}
                     onClick={(e) => {
                         e.stopPropagation();
                         onSelectKey(field.key);
                     }}
                   >
+                        {selectedKey === field.key ? (
+                             <div className="absolute inset-0 border-2 border-indigo-600 border-dashed animate-pulse" />
+                        ) : null}
+                        
                         <div className={cn(
-                            "h-4 w-4 rounded-full border-2 bg-white transition-all shadow-xl",
-                            selectedKey === field.key ? "border-indigo-600 scale-125 ring-4 ring-indigo-100" : "border-gray-400 opacity-60 hover:opacity-100"
+                            "h-2 w-2 rounded-full bg-indigo-600 transition-all shadow-xl absolute",
+                            selectedKey === field.key ? "scale-100 opacity-100" : "opacity-0"
                         )} />
+                        
                         {selectedKey === field.key && (
                             <div className="absolute -top-10 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded shadow-xl whitespace-nowrap animate-in fade-in slide-in-from-bottom-2">
                                 {field.label || "Unnamed"}

@@ -16,6 +16,8 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File;
     const reportType = formData.get("reportType") as string || "Monthly MIS";
     const notes = formData.get("notes") as string || "";
+    const mappingJson = formData.get("mapping") as string || "{}";
+    const userMapping = JSON.parse(mappingJson);
 
     if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
 
@@ -51,78 +53,51 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Create chunks of records to avoid database timeouts
+    // Extract Records using Mapping
     const chunkSize = 100;
     for (let i = 0; i < data.length; i += chunkSize) {
       const chunk = data.slice(i, i + chunkSize);
       
       await prisma.misRecord.createMany({
         data: chunk.map((row, index) => {
-          // Helper for fuzzy header matching
-          const getVal = (aliases: string[]) => {
+          const getVal = (targetKey: string, aliases: string[]) => {
+            // Priority 1: User Mapping
+            const mappedHeader = userMapping[targetKey];
+            if (mappedHeader && row[mappedHeader] !== undefined) return row[mappedHeader];
+
+            // Priority 2: Fuzzy matching / Aliases
             for (const alias of aliases) {
               const exactMatch = row[alias];
               if (exactMatch !== undefined && exactMatch !== null) return exactMatch;
               
-              // Case insensitive search
               const foundKey = Object.keys(row).find(k => k.toLowerCase().trim() === alias.toLowerCase());
               if (foundKey) return row[foundKey];
-
-              // Handle duplicate columns like Branch.1 or Branch_1
-              const suffixedKey = Object.keys(row).find(k => k.toLowerCase().startsWith(alias.toLowerCase() + ".") || k.toLowerCase().startsWith(alias.toLowerCase() + "_"));
-              if (suffixedKey) return row[suffixedKey];
             }
             return "";
           };
 
-          const rate = parseFloat(getVal(["Rate"]) || "0") || 0;
-          const conv = parseFloat(getVal(["Conveyance"]) || "0") || 0;
-          const addl = parseFloat(getVal(["Aditional Fee", "Additional Fee"]) || "0") || 0;
-          const total = parseFloat(getVal(["Total"]) || "0") || (rate + conv + addl);
+          const rate = parseFloat(getVal("rate", ["Rate"]) || "0") || 0;
+          const conv = parseFloat(getVal("conveyance", ["Conveyance"]) || "0") || 0;
+          const addl = parseFloat(getVal("additionalFee", ["Aditional Fee", "Additional Fee"]) || "0") || 0;
+          const total = parseFloat(getVal("total", ["Total"]) || "0") || (rate + conv + addl);
 
           return {
             misFileId: misFile.id,
-            sNo: parseInt(getVal(["S. No", "S No", "SNo"]) || "0") || null,
-            eepacRefNo: String(getVal(["EEPAC Reference No", "EEPAC Ref"]) || ""),
-            appRefNo: String(getVal(["App Reference No.", "App Ref No", "App Ref"]) || ""),
-            bankRefNo: String(getVal(["Bank Reference No", "Bank Ref"]) || ""),
-            additionalBankRef: String(getVal(["Additional Bank Reference Number", "Addl Bank Ref"]) || ""),
-            applicantName: String(getVal(["Applicant Name", "Applicant"]) || ""),
-            address: String(getVal(["Address"]) || ""),
-            city: String(getVal(["City"]) || ""),
-            state: String(getVal(["State"]) || ""),
-            pinCode: String(getVal(["Pin Code", "Pincode"]) || ""),
-            caseType: String(getVal(["Case Type"]) || ""),
-            bankName: String(getVal(["Bank", "Name of Bank/FI", "Bank Name"]) || ""),
-            customerContact: String(getVal(["Customer Contact No", "Contact"]) || ""),
-            branch: String(getVal(["Branch"]) || ""),
-            rmContact: String(getVal(["RM Contact Number", "RM Contact"]) || ""),
-            initiationDate: String(getVal(["Initiation Date"]) || ""),
-            time: String(getVal(["Time"]) || ""),
-            initiatedBy: String(getVal(["Initiated by"]) || ""),
-            visitDone: String(getVal(["Visit Done"]) || ""),
-            visitDate: String(getVal(["Visit Date"]) || ""),
-            reportSent: String(getVal(["Report Sent"]) || ""),
-            status1: String(getVal(["Status1"]) || ""),
-            status2: String(getVal(["Status2"]) || ""),
-            status3: String(getVal(["Status3"]) || ""),
-            status4: String(getVal(["Status4"]) || ""),
-            visitDoneBy: String(getVal(["Visit Done by"]) || ""),
-            followUpDate: String(getVal(["Follow Up Date"]) || ""),
-            specialFee: parseFloat(getVal(["Special Fee"]) || "0") || null,
-            serviceLocation: String(getVal(["Service Location"]) || ""),
-            branch1: String(getVal(["Branch.1", "Branch_1"]) || ""),
-            month: String(getVal(["Month"]) || ""),
-            nameOfBankFi: String(getVal(["Name of Bank/FI", "Bank"]) || ""),
-            status: String(getVal(["Status"]) || ""),
+            sNo: parseInt(getVal("sNo", ["S. No", "S No", "SNo"]) || "0") || null,
+            eepacRefNo: String(getVal("eepacRefNo", ["EEPAC Reference No", "EEPAC Ref"]) || ""),
+            appRefNo: String(getVal("appRefNo", ["App Reference No.", "App Ref No", "App Ref"]) || ""),
+            bankRefNo: String(getVal("bankRefNo", ["Bank Reference No", "Bank Ref"]) || ""),
+            applicantName: String(getVal("applicantName", ["Applicant Name", "Applicant"]) || ""),
+            city: String(getVal("city", ["City"]) || ""),
+            caseType: String(getVal("caseType", ["Case Type"]) || ""),
+            bankName: String(getVal("bankName", ["Bank", "Name of Bank/FI", "Bank Name"]) || ""),
+            branch: String(getVal("branch", ["Branch"]) || ""),
+            visitDate: String(getVal("visitDate", ["Visit Date"]) || ""),
+            status: String(getVal("status", ["Status"]) || ""),
             rate: rate,
-            distance: parseFloat(getVal(["Distance"]) || "0") || null,
             conveyance: conv,
             additionalFee: addl,
             total: total,
-            billSent: String(getVal(["Bill Sent"]) || ""),
-            amountReceived: parseFloat(getVal(["Amount Received"]) || "0") || null,
-            address1: String(getVal(["Address.1", "Address_1"]) || ""),
             rowIndex: i + index,
           };
         }),

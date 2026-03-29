@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, FileText, CheckCircle2, AlertCircle, X, Loader2, Download, Table as TableIcon } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, X, Loader2, Download, Table as TableIcon, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,12 +20,14 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { MisMapper } from "./mis-mapper";
 
 export function UploadMisZone() {
   const [file, setFile] = useState<File | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [reportType, setReportType] = useState("Monthly MIS");
   const [notes, setNotes] = useState("");
+  const [mapping, setMapping] = useState<Record<string, string>>({});
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +48,14 @@ export function UploadMisZone() {
   const handleUpload = async () => {
     if (!file) return;
 
+    // Check if required fields mapped
+    const required = ["eepacRefNo", "applicantName", "bankName", "total"];
+    const missing = required.filter(k => !mapping[k]);
+    if (missing.length > 0) {
+        toast.error(`Please map required fields: ${missing.join(", ")}`);
+        return;
+    }
+
     setIsUploading(true);
     setUploadProgress(15);
 
@@ -53,6 +63,7 @@ export function UploadMisZone() {
     formData.append("file", file);
     formData.append("reportType", reportType);
     formData.append("notes", notes);
+    formData.append("mapping", JSON.stringify(mapping));
 
     try {
       setUploadProgress(40);
@@ -66,13 +77,13 @@ export function UploadMisZone() {
 
       const data = await response.json();
       setUploadProgress(100);
-      toast.success(`Successfully uploaded ${data.fileName}!`);
+      toast.success(`Neural engine synchronized ${data.recordCount} records!`);
       setIsModalOpen(false);
       resetState();
       router.refresh();
       
     } catch (error) {
-      toast.error("Failed to upload MIS file. Please try again.");
+      toast.error("Failed to sync neural database. Please retry.");
       setIsUploading(false);
     } finally {
       setIsUploading(false);
@@ -83,6 +94,7 @@ export function UploadMisZone() {
     setFile(null);
     setReportType("Monthly MIS");
     setNotes("");
+    setMapping({});
     setUploadProgress(0);
     setIsUploading(false);
   };
@@ -90,7 +102,7 @@ export function UploadMisZone() {
   return (
     <>
       <div 
-        className="group relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 p-20 text-center transition-all hover:border-primary/50 hover:bg-primary/5 dark:border-zinc-800 dark:hover:bg-zinc-900/50"
+        className="group relative flex flex-col items-center justify-center rounded-[3rem] border-2 border-dashed border-gray-200 p-20 text-center transition-all hover:border-indigo-500/50 hover:bg-indigo-50/10 dark:border-zinc-800 dark:hover:bg-zinc-900/50 shadow-inner"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
@@ -106,92 +118,106 @@ export function UploadMisZone() {
           onChange={handleFileSelect}
           accept=".xlsx,.xls,.csv"
         />
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gray-50 text-gray-400 transition-colors group-hover:bg-primary/10 group-hover:text-primary dark:bg-zinc-900 shadow-sm border border-gray-100">
+        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gray-50 text-gray-400 transition-all group-hover:bg-indigo-600 group-hover:text-white group-hover:rotate-6 dark:bg-zinc-900 shadow-xl border-4 border-white group-hover:border-indigo-100 ring-1 ring-gray-100">
           <Upload className="h-10 w-10" />
         </div>
-        <h3 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100 italic">Click to upload or drag and drop</h3>
-        <p className="text-sm font-medium text-muted-foreground mt-2 max-w-sm mx-auto leading-relaxed">
-          Upload your MIS data in Excel format for processing and invoice generation.
+        <h3 className="text-2xl font-black italic tracking-tighter text-gray-900 dark:text-gray-100 uppercase">Neural Ingestion Portal</h3>
+        <p className="text-xs font-bold text-muted-foreground mt-4 max-w-sm mx-auto leading-relaxed uppercase tracking-widest opacity-60">
+          Drag and drop your MIS ledger for high-fidelity extraction
         </p>
         
-        <div className="mt-8 flex items-center justify-center gap-4 text-xs font-semibold text-gray-400">
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 dark:bg-zinc-900 rounded-full border border-gray-100">
-            <FileText className="h-3 w-3" />
-            XLSX / CSV
+        <div className="mt-8 flex items-center justify-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-400">
+          <div className="flex items-center gap-2 px-4 py-1.5 bg-white dark:bg-zinc-900 rounded-full border shadow-sm">
+            <FileText className="h-3 w-3 text-indigo-500" />
+            XLSM / XLSX / CSV
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 dark:bg-zinc-900 rounded-full border border-gray-100">
-            <Upload className="h-3 w-3" />
-            MAX 10MB
+          <div className="flex items-center gap-2 px-4 py-1.5 bg-white dark:bg-zinc-900 rounded-full border shadow-sm">
+            <Brain className="h-3 w-3 text-indigo-500" />
+            AI SYNC ACTIVE
           </div>
         </div>
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={(v) => { if(!isUploading) { setIsModalOpen(v); if(!v) resetState(); } }}>
-        <DialogContent className="sm:max-w-md border-none shadow-2xl p-0 overflow-hidden rounded-2xl">
-          <DialogHeader className="p-6 bg-gray-50 dark:bg-zinc-900/50 border-b">
-            <DialogTitle className="text-xl font-bold tracking-tight">Upload MIS File</DialogTitle>
-            <DialogDescription className="text-gray-500 font-medium">Review file details before processing</DialogDescription>
+        <DialogContent className="sm:max-w-4xl border-none shadow-2xl p-0 overflow-hidden rounded-[2.5rem] bg-white">
+          <DialogHeader className="p-8 bg-zinc-950 text-white border-b border-zinc-900">
+            <div className="flex items-center justify-between">
+                <div>
+                   <DialogTitle className="text-2xl font-black italic tracking-tighter flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 shadow-inner border border-white/10">
+                         <Brain className="h-5 w-5 text-indigo-400" />
+                      </div>
+                      Neural Sync Calibration
+                   </DialogTitle>
+                   <DialogDescription className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.3em] mt-2 italic">
+                     Aligning external ledger headers with high-fidelity system anchors
+                   </DialogDescription>
+                </div>
+                {file && (
+                    <Badge variant="outline" className="border-emerald-500/20 bg-emerald-500/5 text-emerald-400 font-black italic text-[10px] tracking-widest h-6 px-3">
+                       FILE IDENTIFIED
+                    </Badge>
+                )}
+            </div>
           </DialogHeader>
 
-          <div className="p-6 space-y-5">
-            <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/20 dark:bg-blue-950/20">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600/10 text-blue-600">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="font-bold text-sm text-blue-900 dark:text-blue-200 truncate">{file?.name}</p>
-                  <p className="text-xs font-semibold text-blue-700/70">{(file?.size || 0) / 1024 > 1024 ? `${((file?.size || 0) / 1024 / 1024).toFixed(1)} MB` : `${((file?.size || 0) / 1024).toFixed(1)} KB`}</p>
-                </div>
-              </div>
-            </div>
+          <div className="p-10 space-y-10 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="report-type" className="font-black text-[10px] uppercase tracking-[0.2em] text-indigo-900">Extraction Context</Label>
+                    <Select value={reportType} onValueChange={setReportType}>
+                      <SelectTrigger id="report-type" className="bg-gray-50/50 border-transparent shadow-sm font-bold text-xs h-12 italic tracking-tight rounded-xl ring-1 ring-gray-100">
+                        <SelectValue placeholder="Select context" />
+                      </SelectTrigger>
+                      <SelectContent className="border shadow-2xl rounded-xl">
+                        <SelectItem value="Monthly MIS" className="font-bold text-xs italic">MONTHLY LEDGER</SelectItem>
+                        <SelectItem value="Weekly MIS" className="font-bold text-xs italic">WEEKLY LEDGER</SelectItem>
+                        <SelectItem value="Correction File" className="font-bold text-xs italic">SYNC CORRECTION</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="report-type" className="font-bold text-xs uppercase tracking-wider text-gray-500">Report Type</Label>
-                <Select value={reportType} onValueChange={setReportType}>
-                  <SelectTrigger id="report-type" className="bg-gray-50 border-gray-100 font-medium h-11">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent className="border shadow-lg">
-                    <SelectItem value="Monthly MIS">Monthly MIS</SelectItem>
-                    <SelectItem value="Weekly MIS">Weekly MIS</SelectItem>
-                    <SelectItem value="Custom Date Range">Custom Date Range</SelectItem>
-                    <SelectItem value="Correction File">Correction File</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes" className="font-black text-[10px] uppercase tracking-[0.2em] text-indigo-900">Neural Notes</Label>
+                    <Textarea 
+                      id="notes" 
+                      placeholder="Add metadata context..." 
+                      className="bg-gray-50/50 border-transparent shadow-sm min-h-[120px] font-bold text-xs leading-relaxed rounded-xl ring-1 ring-gray-100 p-4"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                    />
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="font-bold text-xs uppercase tracking-wider text-gray-500">Notes (Optional)</Label>
-                <Textarea 
-                  id="notes" 
-                  placeholder="Add any context or notes about this data upload..." 
-                  className="bg-gray-50 border-gray-100 min-h-[100px] font-medium leading-relaxed"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
+                <div className="bg-gray-50/30 rounded-3xl p-2 h-fit border border-gray-100">
+                    {file && <MisMapper file={file} onMappingChange={setMapping} />}
+                </div>
             </div>
 
             {isUploading && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="flex justify-between text-xs font-bold text-primary">
-                  <span>Processing Records...</span>
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="flex justify-between text-[11px] font-black italic tracking-widest text-indigo-600 uppercase">
+                  <span>Synchronizing Engine...</span>
                   <span>{uploadProgress}%</span>
                 </div>
-                <Progress value={uploadProgress} className="h-2" />
+                <Progress value={uploadProgress} className="h-3 bg-gray-100 shadow-inner rounded-full" />
               </div>
             )}
           </div>
 
-          <DialogFooter className="p-4 pt-0">
-            <div className="flex w-full gap-3">
-              <Button variant="ghost" onClick={() => setIsModalOpen(false)} disabled={isUploading} className="flex-1 font-bold text-gray-500 hover:bg-gray-100">
-                CANCEL
+          <DialogFooter className="p-8 bg-gray-50/50 border-t items-center">
+            <div className="flex w-full gap-4">
+              <Button variant="ghost" onClick={() => setIsModalOpen(false)} disabled={isUploading} className="flex-1 h-14 font-black italic text-[11px] tracking-[0.3em] uppercase rounded-2xl">
+                ABORT SYNC
               </Button>
-              <Button onClick={handleUpload} disabled={isUploading} className="flex-1 font-bold shadow-md shadow-primary/20">
-                {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "UPLOAD FILE"}
+              <Button onClick={handleUpload} disabled={isUploading} className="flex-1 h-14 bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-600/20 font-black italic text-[11px] tracking-[0.3em] uppercase rounded-2xl gap-3">
+                {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+                    <>
+                        EXECUTE EXTRACTION
+                        <CheckCircle2 className="h-5 w-5" />
+                    </>
+                )}
               </Button>
             </div>
           </DialogFooter>
@@ -200,3 +226,4 @@ export function UploadMisZone() {
     </>
   );
 }
+
