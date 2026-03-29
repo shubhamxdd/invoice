@@ -121,7 +121,7 @@ export function UploadMisZone() {
         <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gray-50 text-gray-400 transition-all group-hover:bg-indigo-600 group-hover:text-white group-hover:rotate-6 dark:bg-zinc-900 shadow-xl border-4 border-white group-hover:border-indigo-100 ring-1 ring-gray-100">
           <Upload className="h-10 w-10" />
         </div>
-        <h3 className="text-2xl font-black italic tracking-tighter text-gray-900 dark:text-gray-100 uppercase">Neural Ingestion Portal</h3>
+        <h3 className="text-2xl font-black italic tracking-tighter text-gray-900 dark:text-gray-100 uppercase">Upload MIS File</h3>
         <p className="text-xs font-bold text-muted-foreground mt-4 max-w-sm mx-auto leading-relaxed uppercase tracking-widest opacity-60">
           Drag and drop your MIS ledger for high-fidelity extraction
         </p>
