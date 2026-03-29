@@ -136,23 +136,47 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
     ]
   });
 
-  // 8. Footers
+  // 8. Footers: Extended Vendor Details
   autoTable(doc, {
-    startY: (doc as any).lastAutoTable.finalY + 5,
-    body: [["Total amount in Words", numberToWords(Math.round(grandTotal))]],
+    startY: (doc as any).lastAutoTable.finalY + 10,
+    head: [[{ content: "Vendor Details", colSpan: 4 }]],
+    body: [
+      ["PAN No", company.panNumber || "—", "Bank Name", company.bankName || "—"],
+      ["GST No", company.gstNumber || "—", "A/c No.", company.accountNumber || "—"],
+      ["HSN/SAC Code", "—", "IFSC Code", company.ifscCode || "—"],
+      ["GST Composite Scheme", "—", "", ""]
+    ],
     theme: "grid",
-    styles: { fontSize: 7, fontStyle: "bold", textColor: 0 },
-    columnStyles: { 0: { cellWidth: 50 } }
+    headStyles: { fillColor: [245, 245, 245], textColor: 0, fontStyle: "bold" },
+    styles: { fontSize: 7, textColor: 0 },
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 40 }, 2: { fontStyle: "bold", cellWidth: 40 } }
   });
 
+  // MSME Note
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(7);
+  doc.text("*The organization registered under MSME Development Act, 2006 and our organization is eligible for 45 days Payment cycle.", 15, (doc as any).lastAutoTable.finalY + 5);
+
+  // 9. Declaration & Signature
+  const signatoryName = options.userName || "Authorized Signatory";
   autoTable(doc, {
-    startY: (doc as any).lastAutoTable.finalY + 5,
-    head: [["Vendor Details"]],
-    body: [[`Bank: ${company.bankName || "-"} | A/C: ${company.accountNumber || "-"} | IFSC: ${company.ifscCode || "-"}`]],
+    startY: (doc as any).lastAutoTable.finalY + 15,
+    body: [
+      [
+        { content: "Declaration:\nThe above information provided is true and correct to the best of my knowledge", styles: { halign: "center", valign: "middle", cellWidth: 100 } },
+        { content: `Signature\n\n\n\n${signatoryName.toUpperCase()}`, styles: { halign: "center", valign: "middle" } }
+      ]
+    ],
     theme: "grid",
-    headStyles: { fillColor: [255, 255, 255], textColor: 0, fontStyle: "bold" },
-    styles: { fontSize: 7, textColor: 0 }
+    styles: { fontSize: 8, cellPadding: 5, textColor: 0 },
+    columnStyles: { 0: { fontStyle: "bold" }, 1: { fontStyle: "bold" } }
   });
+
+  // Final Signatory Line
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(`Name of the Authorized Signatory : ${signatoryName}`, 15, (doc as any).lastAutoTable.finalY + 15);
+  doc.text(`Date: ${new Date().toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' })}`, 15, (doc as any).lastAutoTable.finalY + 22);
 
   // SECTION 2: Annexure
   doc.addPage();
@@ -349,8 +373,40 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
   sheet1.addRow([]);
   sheet1.addRow(["Total amount in words:", numberToWords(Math.round(grandTotal))]).font = { bold: true };
   sheet1.addRow([]);
-  sheet1.addRow(["Vendor Details:"]).font = { bold: true };
-  sheet1.addRow([`Bank: ${company.bankName || "-"} | A/C: ${company.accountNumber || "-"} | IFSC: ${company.ifscCode || "-"}`]);
+
+  // 8. Footers: Extended Vendor Details
+  const vHeader = sheet1.addRow(["Vendor Details"]);
+  vHeader.getCell(1).font = { bold: true };
+  sheet1.mergeCells(`A${vHeader.number}:E${vHeader.number}`);
+  vHeader.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEEEEE' } };
+
+  sheet1.addRow(["PAN No", company.panNumber || "—", "Bank Name", company.bankName || "—"]);
+  sheet1.addRow(["GST No", company.gstNumber || "—", "A/c No.", company.accountNumber || "—"]);
+  sheet1.addRow(["HSN/SAC Code", "—", "IFSC Code", company.ifscCode || "—"]);
+  sheet1.addRow(["GST Composite Scheme", "—", "", ""]);
+
+  sheet1.addRow([]);
+  sheet1.mergeCells(`A${sheet1.rowCount + 1}:E${sheet1.rowCount + 1}`);
+  sheet1.lastRow!.getCell(1).value = "*The organization registered under MSME Development Act, 2006 and our organization is eligible for 45 days Payment cycle.";
+  sheet1.lastRow!.getCell(1).font = { italic: true, size: 8 };
+
+  sheet1.addRow([]);
+  const eSignatory = options.userName || "Authorized Signatory";
+  const declRow = sheet1.addRow(["Declaration:", "Signature"]);
+  declRow.font = { bold: true };
+  sheet1.mergeCells(`A${declRow.number}:C${declRow.number}`);
+  sheet1.mergeCells(`D${declRow.number}:E${declRow.number}`);
+  
+  const declContent = sheet1.addRow(["The above information provided is true and correct to the best of my knowledge", eSignatory.toUpperCase()]);
+  declContent.height = 40;
+  sheet1.mergeCells(`A${declContent.number}:C${declContent.number}`);
+  sheet1.mergeCells(`D${declContent.number}:E${declContent.number}`);
+  declContent.getCell(1).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+  declContent.getCell(4).alignment = { horizontal: 'center', vertical: 'bottom' };
+
+  sheet1.addRow([]);
+  sheet1.addRow([`Name of the Authorized Signatory : ${eSignatory}`]).font = { bold: true };
+  sheet1.addRow([`Date: ${dateStr}`]).font = { bold: true };
 
   sheet1.columns.forEach((col, i) => { col.width = i === 1 ? 40 : 15; });
 
