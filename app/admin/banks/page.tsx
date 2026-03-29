@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Landmark, Plus, Search, RefreshCw, Upload, Download, Trash2, Edit } from "lucide-react";
+import { Landmark, Plus, Search, RefreshCw, Upload, Download, Trash2, Edit, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,6 +49,8 @@ export default async function BanksPage({
       },
     }),
   ]);
+
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
     <div className="space-y-6">
@@ -129,6 +131,42 @@ export default async function BanksPage({
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between px-8 py-6 border-t bg-gray-50/10">
+            <div className="text-sm text-muted-foreground font-medium">
+              Showing <span className="text-gray-900 dark:text-gray-100 italic">{(page - 1) * pageSize + 1}</span> to <span className="text-gray-900 dark:text-gray-100 italic">{Math.min(page * pageSize, totalCount)}</span> of <span className="text-gray-900 dark:text-gray-100 italic">{totalCount}</span> results
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 px-4 gap-2 font-bold uppercase text-[10px] tracking-widest border-gray-200"
+                disabled={page <= 1}
+                asChild
+              >
+                <Link href={`?page=${page - 1}${query ? `&q=${query}` : ""}`}>
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Link>
+              </Button>
+              <div className="flex items-center justify-center h-10 px-4 rounded-md border border-gray-200 bg-white text-xs font-black uppercase tracking-widest text-gray-400">
+                Page {page} of {totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 px-4 gap-2 font-bold uppercase text-[10px] tracking-widest border-gray-200"
+                disabled={page >= totalPages}
+                asChild
+              >
+                <Link href={`?page=${page + 1}${query ? `&q=${query}` : ""}`}>
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
