@@ -229,57 +229,172 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
 
 /**
  * Premium Master Excel Template Generator
- * Matches the structure of the reference image.
+ * Closely mirrors the 2-section PDF layout.
  */
 export async function generateExcelInvoice(records: any[], company: any, filename: string, options: any) {
   const workbook = new ExcelJS.Workbook();
   const bank = options.bank;
   const bankName = bank?.bankName || records[0]?.bankName || "Standard FI";
-  const date = new Date();
-  const monthNames = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
-  const invoiceMonth = records[0]?.month || `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+  const dateStr = new Date().toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' });
   
-  const viewSheet = workbook.addWorksheet("Invoice View");
-  viewSheet.getColumn('A').width = 10;
-  viewSheet.getColumn('B').width = 30;
-  viewSheet.getColumn('C').width = 15;
-  viewSheet.getColumn('D').width = 20;
-  viewSheet.getColumn('E').width = 20;
+  const monthNames = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+  const invoiceMonth = records[0]?.month || `${monthNames[new Date().getMonth()]} ${new Date().getFullYear()}`;
+  const invoiceSerial = `EEPAC/${new Date().getFullYear().toString().slice(-2)}-${(new Date().getFullYear()+1).toString().slice(-2)}/${Math.floor(1000 + Math.random() * 9000)}`;
 
-  viewSheet.mergeCells('A1:E1');
-  viewSheet.getCell('A1').value = company.name || "EEPAC (India) Private Limited";
-  viewSheet.getCell('A1').alignment = { horizontal: 'center' };
-  viewSheet.getCell('A1').font = { bold: true, size: 14 };
+  // Tax constants
+  const companyState = (company.state || "Delhi").toLowerCase().trim();
+  const bankState = (bank?.state || records[0]?.state || "Delhi").toLowerCase().trim();
+  const isInterState = companyState !== bankState && companyState && bankState;
+  const cgstRate = isInterState ? 0 : 0.09;
+  const sgstRate = isInterState ? 0 : 0.09;
+  const igstRate = isInterState ? 0.18 : 0;
 
-  viewSheet.mergeCells('A2:E2');
-  viewSheet.getCell('A2').value = `CIN No-${company.cin || "-"} | GST No-${company.gstNumber || "-"}`;
-  viewSheet.getCell('A2').alignment = { horizontal: 'center' };
+  // --- SHEET 1: Summary ---
+  const sheet1 = workbook.addWorksheet("Section 1 - Summary");
+  
+  // 1. Official Header Image (Exact Match)
+  try {
+    const headerPath = path.join(process.cwd(), "public", "header.jpeg");
+    const headerData = await fs.readFile(headerPath);
+    const imageId = workbook.addImage({
+      buffer: headerData,
+      extension: 'jpeg',
+    });
+    
+    // Position image across top 5 rows (Cast to any to simplify Anchor requirements)
+    sheet1.addImage(imageId, {
+      tl: { col: 0, row: 0 } as any,
+      br: { col: 5, row: 5 } as any
+    });
+  } catch (err) {
+    console.error("Excel header image failed:", err);
+  }
 
-  viewSheet.addRow([]);
-  viewSheet.mergeCells('A4:E4');
-  viewSheet.getCell('A4').value = `BILL FOR THE MONTH OF ${invoiceMonth.toUpperCase()}`;
-  viewSheet.getCell('A4').alignment = { horizontal: 'center' };
-  viewSheet.getCell('A4').font = { bold: true, size: 12 };
+  // Spacing for content below header
+  sheet1.addRow([]);
+  sheet1.addRow([]);
+  sheet1.addRow([]);
+  sheet1.addRow([]);
+  sheet1.addRow([]);
 
-  const gridRow = viewSheet.addRow([`GSTIN ${company.gstNumber}`, `PAN: ${company.panNumber}`, `Udyam: ${company.udyamNumber}`, `CIN: ${company.cin}`]);
-  gridRow.eachCell(c => c.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } });
+  sheet1.mergeCells('A6:E6');
+  sheet1.getCell('A6').value = `BILL FOR THE MONTH OF ${invoiceMonth.toUpperCase()}`;
+  sheet1.getCell('A6').font = { bold: true, size: 14 };
+  sheet1.getCell('A6').alignment = { horizontal: 'center' };
 
-  viewSheet.addRow(["Details of Recipient"]).font = { bold: true };
-  viewSheet.addRow(["Name & Address", `${bankName} ${bank?.address || ""}`]);
-  viewSheet.addRow(["GST No.", bank?.gstNumber || "-"]);
+  sheet1.addRow([]);
+  sheet1.addRow([`Serial No: ${invoiceSerial}`, "", "", "", `Date: ${dateStr}`]);
+  sheet1.addRow([]);
 
-  const subMap: Record<string, any> = {};
-  records.forEach(r => {
-    const k = r.caseType || "Standard";
-    if (!subMap[k]) subMap[k] = { desc: k, rate: r.rate || 0, count: 0 };
-    subMap[k].count++;
+  // Recipient (Exact Mapping)
+  sheet1.addRow(["Details of Recipient:"]).font = { bold: true };
+  sheet1.addRow(["Name & Address :", `${bankName} ${bank?.address || records[0]?.address || ""}`]);
+  sheet1.addRow(["State along with code :", `${bank?.state || "Delhi"} (${bank?.state === "Delhi" ? "07" : "-"})`]);
+  sheet1.addRow(["GST No. :", bank?.gstNumber || "-"]);
+  sheet1.addRow(["PAN No. :", bank?.panNumber || "-"]);
+
+  sheet1.addRow([]);
+  sheet1.addRow(["Subject: Professional Fee for Valuation"]).font = { bold: true };
+
+  // Summary Table
+  const sumHeader = sheet1.addRow(["S No", "Description", "No. of Cases", "Fee Per Case (in Rs)", "Total (in Rs)"]);
+  sumHeader.eachCell(c => {
+    c.font = { bold: true };
+    c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
   });
 
-  const summaryHeader = viewSheet.addRow(["S No", "Description", "No. of Cases", "Fee Per Case", "Total"]);
-  summaryHeader.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEEEEE' } }; c.font = { bold: true }; });
+  const summaryMap: Record<string, { desc: string, rate: number, count: number }> = {};
+  records.forEach(r => {
+    const caseName = r.caseType || "Standard";
+    const rate = r.rate || 0;
+    const key = `${caseName.toLowerCase().trim()}_${rate}`;
+    if (!summaryMap[key]) summaryMap[key] = { desc: caseName, rate: rate, count: 0 };
+    summaryMap[key].count++;
+  });
+
+  Object.values(summaryMap).forEach((s, i) => {
+    const row = sheet1.addRow([i + 1, s.desc, s.count, s.rate, s.count * s.rate]);
+    row.eachCell(cell => {
+      cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+    });
+  });
+
+  const subTotal = Object.values(summaryMap).reduce((sum, s) => sum + (s.count * s.rate), 0);
+  const cgst = subTotal * cgstRate;
+  const sgst = subTotal * sgstRate;
+  const igst = subTotal * igstRate;
+  const grandTotal = subTotal + cgst + sgst + igst;
+
+  // Exact PDF Footer Shading (None, white only as requested)
+  const footers = [
+    ["Cases Total", subTotal],
+    ["CGST 9.0%", cgst === 0 ? "—" : cgst],
+    ["SGST 9.0%", sgst === 0 ? "—" : sgst],
+    ["IGST 18.0%", igst === 0 ? "—" : igst],
+    ["Grand Total", grandTotal]
+  ];
+
+  footers.forEach(f => {
+    const currRow = sheet1.rowCount + 1;
+    sheet1.mergeCells(`A${currRow}:D${currRow}`);
+    const r = sheet1.getRow(currRow);
+    r.getCell(1).value = f[0];
+    r.getCell(1).alignment = { horizontal: 'right' };
+    r.getCell(1).font = { bold: true };
+    r.getCell(5).value = f[1];
+    r.getCell(5).font = { bold: true };
+    r.eachCell(c => c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } });
+  });
+
+  sheet1.addRow([]);
+  sheet1.addRow(["Total amount in words:", numberToWords(Math.round(grandTotal))]).font = { bold: true };
+  sheet1.addRow([]);
+  sheet1.addRow(["Vendor Details:"]).font = { bold: true };
+  sheet1.addRow([`Bank: ${company.bankName || "-"} | A/C: ${company.accountNumber || "-"} | IFSC: ${company.ifscCode || "-"}`]);
+
+  sheet1.columns.forEach((col, i) => { col.width = i === 1 ? 40 : 15; });
+
+
+  // --- SHEET 2: Annexure ---
+  const sheet2 = workbook.addWorksheet("Section 2 - Annexure");
   
-  Object.values(subMap).forEach((s, i) => {
-    viewSheet.addRow([i + 1, s.desc, s.count, s.rate, s.count * s.rate]);
+  sheet2.addRow(["ANNEXURE: Detailed Case Records"]).font = { bold: true, size: 12 };
+  sheet2.addRow([]);
+
+  const detailedHeader = sheet2.addRow(["Sr No", "Invoice No", "Date of visit", "Case Type", "Branch Name", "Address", "Initiated By", "Deal No", "Customer Name", "Date of Initiation", "Month", "Charges", "CGST (9%)", "SGST (9%)", "IGST (18%)", "Total Amount"]);
+  detailedHeader.eachCell(c => {
+    c.font = { bold: true };
+    c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
+  });
+
+  let tCharges = 0, tCgst = 0, tSgst = 0, tIgst = 0, tFinal = 0;
+
+  records.forEach((r, i) => {
+    const charge = r.rate || 0;
+    const c = charge * cgstRate, s = charge * sgstRate, ig = charge * igstRate, tot = charge + c + s + ig;
+    tCharges += charge; tCgst += c; tSgst += s; tIgst += ig; tFinal += tot;
+
+    const row = sheet2.addRow([
+      i + 1, invoiceSerial, r.visitDate || "-", r.caseType || "-", r.branch || "-", r.address || "-",
+      r.initiatedBy || "-", r.eepacRefNo || "-", r.applicantName || "-", r.initiationDate || "-", r.month || "-",
+      charge, c > 0 ? c : "—", s > 0 ? s : "—", ig > 0 ? ig : "—", tot
+    ]);
+    row.eachCell(cell => cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } });
+  });
+
+  // Footer Totals row
+  const totalRow = sheet2.addRow(["TOTAL", "", "", "", "", "", "", "", "", "", "", tCharges, tCgst > 0 ? tCgst : "—", tSgst > 0 ? tSgst : "—", tIgst > 0 ? tIgst : "—", tFinal]);
+  sheet2.mergeCells(`A${totalRow.number}:K${totalRow.number}`);
+  totalRow.eachCell(c => {
+    c.font = { bold: true };
+    c.border = { top: { style: 'thick' }, bottom: { style: 'thick' }, left: { style: 'thin' }, right: { style: 'thin' } };
+  });
+
+  sheet2.columns.forEach((col, i) => { 
+    if (i === 5) col.width = 40; // Address
+    else if ([3, 4, 6, 8, 9].includes(i)) col.width = 20;
+    else col.width = 12;
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
