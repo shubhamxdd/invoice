@@ -75,6 +75,7 @@ model BankTemplate {
   docClassifier   String?
   azureModelId    String?
   extractedFields String?
+  masks           String?
   isActive        Boolean  @default(true)
   uploadedBy      String?
   createdAt       DateTime @default(now())

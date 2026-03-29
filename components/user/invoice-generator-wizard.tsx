@@ -420,34 +420,33 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                  </DialogContent>
                </Dialog>
 
-               {/* Generation Options */}
-               <Card className="md:col-span-3 border-none shadow-lg outline outline-2 outline-primary/5">
-                 <CardHeader className="bg-primary/[0.02] border-b pb-4">
-                   <div className="flex items-center gap-2">
-                     <Settings className="h-4 w-4 text-primary" />
-                     <CardTitle className="text-lg font-bold tracking-tight">Generation Settings</CardTitle>
-                   </div>
-                 </CardHeader>
-                 <CardContent className="p-6 space-y-6">
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Output Format Preference</Label>
-                       <div className="flex gap-2">
-                          {["pdf", "excel", "neural_pdf", "both"].map((f) => (
-                            <Button 
-                              key={f} 
-                              size="sm"
-                              variant={options.format === f ? "default" : "outline"}
-                              className={cn(
-                                "flex-1 font-black tracking-tighter h-10 px-0 uppercase text-[10px]",
-                                options.format === f && "shadow-lg shadow-primary/20 scale-105 z-10"
-                              )}
-                              onClick={() => setOptions({...options, format: f})}
-                            >
-                              {f === "both" ? "PDF & XLSX" : f === "neural_pdf" ? "ORIGINAL PDF" : f.toUpperCase()}
-                            </Button>
-                          ))}
-                       </div>
+                <Card className="md:col-span-3 border-none shadow-lg outline outline-2 outline-primary/5">
+                  <CardHeader className="bg-primary/[0.02] border-b pb-4">
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg font-bold tracking-tight">Generation Settings</CardTitle>
                     </div>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-6">
+                     <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Output Format Preference</Label>
+                        <div className="flex gap-2">
+                           {["pdf", "excel", "both"].map((f) => (
+                             <Button 
+                               key={f} 
+                               size="sm"
+                               variant={options.format === f ? "default" : "outline"}
+                               className={cn(
+                                 "flex-1 font-black tracking-tighter h-10 px-0 uppercase text-[10px]",
+                                 options.format === f && "shadow-lg shadow-primary/20 scale-105 z-10"
+                               )}
+                               onClick={() => setOptions({...options, format: f})}
+                             >
+                               {f === "both" ? "PDF & XLSX" : f.toUpperCase()}
+                             </Button>
+                           ))}
+                        </div>
+                     </div>
 
                     <div className="space-y-4 pt-2">
                        <div className="flex items-center justify-between group">

@@ -73,9 +73,14 @@ export async function POST(req: NextRequest) {
       const cityName = groupRecords[0].city || "Unknown";
       
       const sanitizedBank = bankName.replace(/[^a-z0-9]/gi, '_');
+      const sanitizedBranch = (groupRecords[0].branch || "Default_Branch").replace(/[^a-z0-9]/gi, '_');
       const sanitizedCity = cityName.replace(/[^a-z0-9]/gi, '_');
       
       const filenameBase = `Invoice_${sanitizedBank}_${sanitizedCity}_${timestamp}`;
+      
+      const folderPath = options.groupByBranch 
+        ? `${sanitizedBank}/${sanitizedBranch}`
+        : sanitizedBank;
 
       // USE NEW FUZZY MATCHER
       const bankTemplate = findBestTemplate(bankName, allTemplates);
@@ -89,7 +94,7 @@ export async function POST(req: NextRequest) {
         });
         
         if (pdfBuffer) {
-            zip.file(`${sanitizedBank}/${pdfFilename}`, pdfBuffer);
+            zip.file(`${folderPath}/${pdfFilename}`, pdfBuffer);
         }
       }
 
@@ -102,7 +107,7 @@ export async function POST(req: NextRequest) {
         });
         
         if (excelBuffer) {
-            zip.file(`${sanitizedBank}/${excelFilename}`, excelBuffer);
+            zip.file(`${folderPath}/${excelFilename}`, excelBuffer);
         }
       }
     }
