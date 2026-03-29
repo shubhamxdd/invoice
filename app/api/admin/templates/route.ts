@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       data: {
         bankId,
         templateType: templateType || "pdf",
-        docClassifier: docClassifier || "Neural-V2-Extraction",
+        docClassifier: docClassifier,
         fileName: file.name,
         filePath: `/templates/${fileName}`,
         extractedFields,

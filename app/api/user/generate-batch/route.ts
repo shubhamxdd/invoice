@@ -59,24 +59,33 @@ export async function POST(req: NextRequest) {
 
     // 4. Generate each group
     for (const [key, groupRecords] of Object.entries(groups)) {
-      const bankName = groupRecords[0].bankName || "Unknown";
+      const rawBankName = groupRecords[0].bankName || "Unknown";
+      const bankName = rawBankName.trim();
       const cityName = groupRecords[0].city || "Unknown";
       const sanitizedBank = bankName.replace(/[^a-z0-9]/gi, '_');
       const sanitizedCity = cityName.replace(/[^a-z0-9]/gi, '_');
       
       const filenameBase = `invoice_${sanitizedBank}_${sanitizedCity}_${timestamp}`;
 
-      // Fetch dynamic template for this bank
+      // Fetch dynamic template for this bank (Clean search)
       const bankTemplate = await prisma.bankTemplate.findFirst({
-        where: { bank: { bankName: bankName }, isActive: true },
+        where: { 
+          bank: { 
+            bankName: { contains: bankName }
+          }, 
+          isActive: true,
+          extractedFields: { not: "[]" }
+        },
         orderBy: { updatedAt: 'desc' }
       });
 
       // PDF Output
-      if (options.format === "pdf" || options.format === "both") {
+      if (options.format === "pdf" || options.format === "both" || options.format === "neural_pdf") {
         const pdfFilename = `${filenameBase}.pdf`;
         const pdfBuffer = await generatePdfInvoice(groupRecords, company, pdfFilename, { ...options, template: bankTemplate });
-        zip.file(`${sanitizedBank}/${sanitizedCity}/pdf/${pdfFilename}`, pdfBuffer);
+        if (pdfBuffer) {
+            zip.file(`${sanitizedBank}/${sanitizedCity}/pdf/${pdfFilename}`, pdfBuffer);
+        }
       }
 
       // Excel Output

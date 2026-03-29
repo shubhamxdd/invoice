@@ -1,9 +1,8 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Brain, ArrowLeft, Save, FileText, AlertCircle, Info } from "lucide-react";
+import { Brain, ArrowLeft, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TemplateConfigForm } from "@/components/admin/template-config-form";
@@ -49,52 +48,44 @@ export default async function ManageTemplatePage({
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-         <Card className="lg:col-span-1 border-none shadow-xl rounded-[2.5rem] overflow-hidden">
-            <CardHeader className="p-8 pb-4">
-               <CardTitle className="text-lg font-black uppercase tracking-tight italic flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-indigo-600" />
-                  Model Overview
-               </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 pt-0 space-y-6">
-               <div className="p-6 rounded-3xl bg-indigo-50/50 border border-indigo-100 flex flex-col gap-4">
-                  <div className="space-y-1">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Classifier ID</p>
-                     <p className="font-bold text-indigo-900">{template.docClassifier}</p>
-                  </div>
-                  <div className="space-y-1">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Source Type</p>
-                     <p className="font-bold text-indigo-900 uppercase">{template.templateType}</p>
-                  </div>
-                  <div className="space-y-1">
-                     <p className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Created On</p>
-                     <p className="font-bold text-indigo-900">{template.createdAt.toLocaleDateString()}</p>
-                  </div>
-               </div>
-
-               <div className="p-6 rounded-3xl bg-emerald-50/30 border border-emerald-100 items-start gap-4 flex">
-                  <div className="h-10 w-10 rounded-xl bg-white text-emerald-600 shadow-sm border border-emerald-100 flex items-center justify-center shrink-0">
-                     <Info className="h-5 w-5" />
-                  </div>
-                  <div>
-                     <p className="text-[11px] font-bold text-emerald-800 uppercase leading-snug">Extraction state is healthy. System is correctly identifying {template.extractedFields ? JSON.parse(template.extractedFields).length : 0} fields.</p>
-                  </div>
-               </div>
-            </CardContent>
-         </Card>
-
-         <Card className="lg:col-span-2 border-none shadow-xl rounded-[2.5rem] overflow-hidden">
-             <CardHeader className="p-8 border-b bg-gray-50/30 flex flex-row items-center justify-between">
-                <div>
-                   <CardTitle className="text-xl font-black italic uppercase tracking-tight">Neural Mapping</CardTitle>
-                   <CardDescription className="text-xs font-bold uppercase tracking-widest text-gray-400 mt-1">Configure field keys for automated extraction</CardDescription>
+      <div className="flex flex-col gap-8">
+         <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden">
+             <CardHeader className="p-10 border-b bg-gray-50/10 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-6">
+                   <div className="h-14 w-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-600/20">
+                      <Brain className="h-7 w-7" />
+                   </div>
+                   <div>
+                      <CardTitle className="text-2xl font-black italic uppercase tracking-tighter">Neural Calibration Studio</CardTitle>
+                      <CardDescription className="text-sm font-bold uppercase tracking-[0.2em] text-gray-400 mt-1">Configuring extraction anchors for {template.bank.bankName}</CardDescription>
+                   </div>
+                </div>
+                <div className="flex items-center gap-8">
+                   <div className="flex flex-col text-right">
+                      <p className="text-[9px] font-black uppercase text-indigo-300">Classifier ID</p>
+                      <p className="font-bold text-sm tracking-tight">{template.docClassifier}</p>
+                   </div>
+                   <div className="h-10 w-[1px] bg-gray-100" />
+                   <div className="flex flex-col text-right">
+                      <p className="text-[9px] font-black uppercase text-indigo-300">Active Anchors</p>
+                      <p className="font-bold text-sm tracking-tight">{template.extractedFields ? JSON.parse(template.extractedFields).length : 0} points</p>
+                   </div>
                 </div>
              </CardHeader>
-             <CardContent className="p-8">
+             <CardContent className="p-10">
                 <TemplateConfigForm template={template} />
              </CardContent>
          </Card>
+
+         <div className="flex justify-between items-center bg-emerald-50/30 border border-emerald-100 p-6 rounded-[2rem]">
+            <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-xl bg-white text-emerald-600 shadow-sm border border-emerald-100 flex items-center justify-center shrink-0">
+                    <Info className="h-5 w-5" />
+                </div>
+                <p className="text-xs font-bold text-emerald-800 uppercase leading-snug tracking-wide">Model health is optimal. New coordinates are immediately available for ingestion.</p>
+            </div>
+            <div className="text-[10px] font-black text-emerald-600/40 uppercase tracking-[0.3em]">Neural V2 Active</div>
+         </div>
       </div>
     </div>
   );

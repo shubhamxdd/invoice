@@ -18,11 +18,10 @@ import { AddUserDialog } from "@/components/admin/add-user-dialog";
 import { TableSearch } from "@/components/admin/table-search";
 import { UserActions } from "@/components/admin/user-actions";
 
-export default async function UserManagementPage({
-  searchParams,
-}: {
-  searchParams: { q?: string };
+export default async function UserManagementPage(props: {
+  searchParams: Promise<{ q?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   const query = searchParams.q || "";
 
   const users = await prisma.user.findMany({

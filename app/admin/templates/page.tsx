@@ -20,11 +20,10 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 
-export default async function aiTemplatesPage({
-  searchParams,
-}: {
-  searchParams: { q?: string };
+export default async function aiTemplatesPage(props: {
+  searchParams: Promise<{ q?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   const query = searchParams.q || "";
 
   const templates = await prisma.bankTemplate.findMany({

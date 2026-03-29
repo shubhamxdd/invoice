@@ -432,7 +432,7 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                     <div className="space-y-2">
                        <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Output Format Preference</Label>
                        <div className="flex gap-2">
-                          {["pdf", "excel", "both"].map((f) => (
+                          {["pdf", "excel", "neural_pdf", "both"].map((f) => (
                             <Button 
                               key={f} 
                               size="sm"
@@ -443,7 +443,7 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                               )}
                               onClick={() => setOptions({...options, format: f})}
                             >
-                              {f === "both" ? "PDF & XLSX" : f.toUpperCase()}
+                              {f === "both" ? "PDF & XLSX" : f === "neural_pdf" ? "ORIGINAL PDF" : f.toUpperCase()}
                             </Button>
                           ))}
                        </div>

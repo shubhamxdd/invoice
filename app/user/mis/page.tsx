@@ -18,11 +18,10 @@ import { MisDataPreview } from "@/components/user/mis-data-preview";
 import { MisFileActions } from "@/components/user/mis-file-actions";
 import { TableSearch } from "@/components/admin/table-search";
 
-export default async function MisManagementPage({
-  searchParams,
-}: {
-  searchParams: { tab?: string; q?: string; page?: string };
+export default async function MisManagementPage(props: {
+  searchParams: Promise<{ tab?: string; q?: string; page?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   const session = await auth();
   const currentTab = searchParams.tab || "files";
   const query = searchParams.q || "";

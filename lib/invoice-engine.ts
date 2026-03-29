@@ -1,6 +1,9 @@
 import ExcelJS from "exceljs";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import fs from "fs/promises";
+import path from "path";
 
 // Bank-specific format definitions
 const BANK_FORMATS: Record<string, any> = {
@@ -73,7 +76,6 @@ const BANK_FORMATS: Record<string, any> = {
 };
 
 function getBankConfig(bankName: string = "", template?: any) {
-  // If a dynamic template from AI is provided, prioritize it
   if (template?.extractedFields) {
     try {
       const fields = JSON.parse(template.extractedFields);
@@ -82,12 +84,7 @@ function getBankConfig(bankName: string = "", template?: any) {
           headers: fields.map((f: any) => ({ header: f.label, key: f.key, width: 20 })),
           mapping: (r: any, i: number) => {
              const row: any = {};
-             // Map standard MIS keys to the dynamic keys found by AI
              fields.forEach((f: any) => {
-               // Search prioritized order: 
-               // 1. Direct camelCase key from DB (e.g. appRefNo)
-               // 2. Exact user provided header from MIS (e.g. "App Reference No.")
-               // 3. The label AI discovered in the PDF
                row[f.key] = r[f.key] || r[f.label] || "";
              });
              if (!row.sNo) row.sNo = i + 1;
@@ -107,22 +104,23 @@ function getBankConfig(bankName: string = "", template?: any) {
 }
 
 export async function generateExcelInvoice(records: any[], company: any, filename: string, options: any) {
+  if (options?.template?.excelPath) {
+    const templateExcel = await generateTemplateExcelInvoice(records, company, options.template);
+    if (templateExcel) return templateExcel;
+  }
+
   const workbook = new ExcelJS.Workbook();
   const bankName = records[0]?.bankName || "Standard FI";
   const config = getBankConfig(bankName, options?.template);
   const totalAmount = records.reduce((sum, r) => sum + (r.total || 0), 0);
 
-  // SHEET 1: VISUAL REPLICA (PDF-LIKE LAYOUT)
   const mainSheet = workbook.addWorksheet("Visual Invoice");
-  
-  // Set Column Widths for a clean Look
   mainSheet.getColumn('A').width = 10;
   mainSheet.getColumn('B').width = 40;
   mainSheet.getColumn('C').width = 20;
   mainSheet.getColumn('D').width = 15;
   mainSheet.getColumn('E').width = 15;
 
-  // 1. Branding Header
   mainSheet.mergeCells('A1:E1');
   const companyTitle = mainSheet.getCell('A1');
   companyTitle.value = company.name?.toUpperCase();
@@ -139,7 +137,6 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
   mainSheet.getCell('A3').alignment = { horizontal: 'center' };
   mainSheet.getCell('A3').font = { size: 9, bold: true };
 
-  // 2. Bill To & Invoice Info
   mainSheet.getCell('A5').value = "BILL TO:";
   mainSheet.getCell('A5').font = { bold: true };
   mainSheet.mergeCells('A6:B6');
@@ -151,10 +148,8 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
   mainSheet.getCell('D6').value = "DATE:";
   mainSheet.getCell('E6').value = new Date().toLocaleDateString();
 
-  // 3. The Table
   const tableHeaders = config.headers.map((h: any) => h.header);
   const keys = config.headers.map((h: any) => h.key);
-  
   const headerRowIndex = 9;
   mainSheet.getRow(headerRowIndex).values = tableHeaders;
   mainSheet.getRow(headerRowIndex).font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -166,7 +161,6 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
     mainSheet.addRow(rowValues);
   });
 
-  // 4. Totals Footer
   const footerStartRow = mainSheet.rowCount + 2;
   mainSheet.getCell(`D${footerStartRow}`).value = "SUBTOTAL";
   mainSheet.getCell(`E${footerStartRow}`).value = totalAmount;
@@ -174,73 +168,81 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
   mainSheet.getCell(`E${footerStartRow + 1}`).value = totalAmount * 0.18;
   mainSheet.getCell(`D${footerStartRow + 2}`).value = "TOTAL PAYABLE";
   mainSheet.getCell(`E${footerStartRow + 2}`).value = totalAmount * 1.18;
-  mainSheet.getRow(footerStartRow + 2).font = { bold: true, size: 12 };
-
-  // SHEET 2: DATA SUMMARY
-  const summarySheet = workbook.addWorksheet("Data Summary");
-  summarySheet.columns = [
-    { header: "Case Type / Category", key: "type", width: 30 },
-    { header: "Volume Count", key: "count", width: 15 },
-    { header: "Total Fee", key: "fee", width: 20 },
-  ];
-  
-  const stats = records.reduce((acc, r) => {
-    const type = r.caseType || "Standard";
-    if (!acc[type]) acc[type] = { count: 0, total: 0 };
-    acc[type].count++;
-    acc[type].total += (r.total || 0);
-    return acc;
-  }, {} as any);
-
-  Object.entries(stats).forEach(([type, data]: [string, any]) => {
-    summarySheet.addRow({
-      type,
-      count: data.count,
-      fee: data.total
-    });
-  });
 
   const buffer = await workbook.xlsx.writeBuffer();
-  return buffer;
+  return Buffer.from(buffer);
+}
+
+export async function generateTemplateExcelInvoice(records: any[], company: any, template: any) {
+  try {
+    const templatePath = path.isAbsolute(template.excelPath) 
+      ? template.excelPath 
+      : path.join(process.cwd(), template.excelPath);
+      
+    const bufferData = await fs.readFile(templatePath);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(bufferData);
+    const sheet = workbook.getWorksheet(1);
+    if (!sheet) return null;
+
+    const allFields = JSON.parse(template.extractedFields || "[]");
+    const mainRecord = records[0];
+
+    // Smart Replacement
+    sheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        const val = String(cell.value || "");
+        allFields.forEach((f: any) => {
+             if (val.includes(`{{${f.key}}}`) || val.includes(`[${f.label}]`)) {
+                 cell.value = String(mainRecord[f.key] || mainRecord[f.label] || "");
+             }
+        });
+      });
+    });
+
+    const outputBuffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(outputBuffer);
+  } catch (error) {
+    console.error("Excel Template Cloner Error:", error);
+    return null;
+  }
 }
 
 export async function generatePdfInvoice(records: any[], company: any, filename: string, options: any) {
+  if (options?.template?.filePath && options?.template?.extractedFields) {
+    const templatePdf = await generateTemplatePdfInvoice(records, company, options.template);
+    if (templatePdf) return templatePdf;
+  }
+
   const doc = new jsPDF();
   const bankName = records[0]?.bankName || "Standard FI";
   const config = getBankConfig(bankName, options?.template);
   const totalAmount = records.reduce((sum, r) => sum + (r.total || 0), 0);
 
-  // Logo Placeholder / Branding
   doc.setFillColor(63, 81, 181);
   doc.rect(0, 0, 210, 40, 'F');
-  
   doc.setFontSize(26);
   doc.setTextColor(255);
   doc.setFont("helvetica", "bold");
   doc.text(company.name?.toUpperCase() || "KEC INVOICE", 105, 20, { align: "center" });
-
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.text(company.address || "", 105, 28, { align: "center" });
   doc.setFont("helvetica", "bold");
   doc.text(`GST: ${company.gstNumber} | PAN: ${company.panNumber}`, 105, 34, { align: "center" });
 
-  // Bill To
   doc.setTextColor(0);
   doc.setFontSize(10);
   doc.text("BILL TO:", 14, 55);
   doc.setFontSize(14);
   doc.text(bankName, 14, 62);
-  
   doc.setFontSize(10);
   doc.setTextColor(150);
   doc.text(`INVOICE: ${Date.now()}`, 196, 55, { align: "right" });
   doc.text(`DATE: ${new Date().toLocaleDateString()}`, 196, 62, { align: "right" });
 
-  // Table
   const headerLabels = config.headers.map((h: any) => h.header);
   const keys = config.headers.map((h: any) => h.key);
-  
   const tableData = records.map((r, i) => {
     const mapped = config.mapping(r, i);
     return keys.map((k: string) => {
@@ -260,15 +262,70 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
     styles: { fontSize: 8, cellPadding: 3 },
   });
 
-  // Bank Info Footer
-  const finalY = (doc as any).lastAutoTable.finalY + 20;
-  if(finalY < 260) {
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text("BANK DETAILS FOR PAYMENT:", 14, finalY);
-    doc.setTextColor(40);
-    doc.text("HDFC BANK | ACCT: 0524XXXXXXXX | IFSC: HDFC0000524", 14, finalY + 7);
-  }
+  return Buffer.from(doc.output("arraybuffer"));
+}
 
-  return doc.output("arraybuffer");
+export async function generateTemplatePdfInvoice(records: any[], company: any, template: any) {
+  try {
+    const templatePath = path.isAbsolute(template.filePath) 
+      ? template.filePath 
+      : path.join(process.cwd(), template.filePath);
+      
+    const existingPdfBytes = await fs.readFile(templatePath);
+    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+    const templatePage = pdfDoc.getPages()[0];
+    const { width, height } = templatePage.getSize();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+    const allFields = JSON.parse(template.extractedFields);
+    const headerFields = allFields.filter((f: any) => f.type !== 'table_column');
+    const columnFields = allFields.filter((f: any) => f.type === 'table_column');
+
+    let currentPage = templatePage;
+    let currentY_Percentage = columnFields.length > 0 ? Math.min(...columnFields.map((f: any) => f.y)) : 0.4;
+    const rowHeight = 0.03; 
+    const bottomMargin = 0.1;
+
+    headerFields.forEach((field: any) => {
+        const value = records[0][field.key] || records[0][field.label] || "";
+        if (!value) return;
+
+        currentPage.drawText(String(value), {
+            x: field.x * width,
+            y: height - (field.y * height),
+            size: 9,
+            font: fontBold,
+            color: rgb(0, 0, 0),
+        });
+    });
+
+    for (const record of records) {
+        if (currentY_Percentage + rowHeight > (1 - bottomMargin)) {
+            const [newPage] = await pdfDoc.copyPages(pdfDoc, [0]);
+            pdfDoc.addPage(newPage);
+            currentPage = newPage;
+            currentY_Percentage = columnFields.length > 0 ? Math.min(...columnFields.map((f: any) => f.y)) : 0.4;
+        }
+
+        columnFields.forEach((col: any) => {
+            const value = record[col.key] || record[col.label] || "";
+            currentPage.drawText(String(value), {
+                x: col.x * width,
+                y: height - (currentY_Percentage * height),
+                size: 8,
+                font: font,
+                color: rgb(0, 0, 0),
+            });
+        });
+
+        currentY_Percentage += rowHeight;
+    }
+
+    const pdfBytes = await pdfDoc.save();
+    return Buffer.from(pdfBytes);
+  } catch (error) {
+    console.error("Neural Template Infill Error:", error);
+    return null; 
+  }
 }
