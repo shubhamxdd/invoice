@@ -30,7 +30,7 @@ export default async function UserSettingsPage() {
                  </div>
                  <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Username</p>
-                    <p className="text-sm font-black italic">{session?.user?.username || session?.user?.name}</p>
+                    <p className="text-sm font-black italic">{(session?.user as any)?.username || session?.user?.name}</p>
                  </div>
               </div>
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
