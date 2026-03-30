@@ -290,7 +290,7 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
   try {
     const headerPath = path.join(process.cwd(), "public", "header.jpeg");
     const headerData = await fs.readFile(headerPath);
-    const imageId = workbook.addImage({ buffer: headerData, extension: 'jpeg' });
+    const imageId = workbook.addImage({ buffer: headerData as any, extension: 'jpeg' });
     sheet1.addImage(imageId, "A1:E5");
   } catch (err) { console.error("Excel header image failed:", err); }
 
