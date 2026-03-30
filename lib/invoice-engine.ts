@@ -60,12 +60,12 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
   autoTable(doc, {
     startY: 85,
     head: [[
-      `GSTIN ${company.gstNumber || "-"}`, 
-      `PAN: ${company.panNumber || "-"}`, 
-      `Udyam: ${company.udyamNumber || "-"}`, 
-      `CIN: ${company.cin || "-"}`
+      `GSTIN ${company.gstNumber.toUpperCase() || "-"}`, 
+      `PAN: ${company.panNumber.toUpperCase() || "-"}`, 
+      `Udyam: ${company.udyamNumber.toUpperCase() || "-"}`, 
+      `CIN: ${company.cin.toUpperCase() || "-"}`
     ]],
-    body: [[{ content: `Name & Address : ${company.address || "-"}`, colSpan: 4 }]],
+    body: [[{ content: `Name & Address : ${company.address.toUpperCase() || "-"}`, colSpan: 4 }]],
     theme: "grid",
     headStyles: { fillColor: [255, 255, 255], textColor: 0, fontSize: 8, fontStyle: "bold", halign: "center" },
     styles: { fontSize: 7, cellPadding: 2 }
