@@ -55,6 +55,7 @@ model Bank {
   branch       String
   address      String?
   state        String?
+  stateCode    String?
   gstNumber     String?
   panNumber     String?
   udyamNumber   String?
