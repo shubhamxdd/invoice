@@ -127,6 +127,7 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
     headStyles: { fillColor: [255, 255, 255], textColor: 0, fontStyle: "bold", halign: "left" }, // White/Black
     styles: { fontSize: 8, cellPadding: 2, textColor: 0 },
     columnStyles: { 0: { halign: "left", cellWidth: 15 }, 2: { halign: "left", cellWidth: 30 }, 3: { halign: "left" }, 4: { halign: "left" } },
+    showFoot: 'lastPage',
     foot: [
       [{ content: "Cases Total", colSpan: 4, styles: { halign: "right", fontStyle: "bold", fillColor: [255, 255, 255], textColor: 0 } }, { content: subTotal.toLocaleString("en-IN"), styles: { halign: "right", fontStyle: "bold", fillColor: [255, 255, 255], textColor: 0 } }],
       [{ content: "CGST 9.0%", colSpan: 4, styles: { halign: "right", fontStyle: "bold", fillColor: [255, 255, 255], textColor: 0 } }, { content: cgst === 0 ? "—" : cgst.toLocaleString("en-IN"), styles: { halign: "right", fontStyle: "bold", fillColor: [255, 255, 255], textColor: 0 } }],
@@ -237,6 +238,7 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
       5: { cellWidth: 30 }, // Address
       8: { cellWidth: 15 }  // Customer
     },
+    showFoot: 'lastPage',
     foot: [
       [{ content: "TOTAL", colSpan: 11, styles: { halign: "right", fontStyle: "bold" } }, 
        totalCharges.toLocaleString("en-IN"), 
