@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
             state: getVal(["State"]) ? String(getVal(["State"])).trim() : undefined,
             stateCode: getVal(["State Code"]) ? String(getVal(["State Code"])).trim() : undefined,
             gstNumber: getVal(["GST Number"]) ? String(getVal(["GST Number"])).trim() : undefined,
+            panNumber: getVal(["PAN Number"]) ? String(getVal(["PAN Number"])).trim() : undefined,
           },
           create: {
             bankName: String(bankName).trim(),
@@ -92,6 +93,7 @@ export async function POST(req: NextRequest) {
             state: getVal(["State"]) ? String(getVal(["State"])).trim() : undefined,
             stateCode: getVal(["State Code"]) ? String(getVal(["State Code"])).trim() : undefined,
             gstNumber: getVal(["GST Number"]) ? String(getVal(["GST Number"])).trim() : undefined,
+            panNumber: getVal(["PAN Number"]) ? String(getVal(["PAN Number"])).trim() : undefined,
           },
         });
         successCount++;

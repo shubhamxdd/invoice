@@ -77,9 +77,9 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
     head: [[{ content: "Details of Recipient", colSpan: 2 }]],
     body: [
       ["Name & Address :", `${bankName} ${bank?.address || records[0]?.address || ""}`],
-      ["State along with the State Code :", `${bank?.state || "Delhi"} (${bank?.stateCode || "-"})`],
-      ["GST No. :", bank?.gstNumber || "-"],
-      ["PAN No. :", bank?.panNumber || "-"]
+      ["State along with the State Code :", `${bank?.state || records[0]?.state || "Delhi"} (${bank?.stateCode || records[0]?.stateCode || "-"})`],
+      ["GST No. :", bank?.gstNumber || records[0]?.gstNumber || records[0]?.["GST Number"] || records[0]?.["GST Registration"] || "-"],
+      ["PAN No. :", bank?.panNumber || records[0]?.panNumber || records[0]?.["PAN Number"] || records[0]?.["PAN Registration"] || "-"]
     ],
     theme: "grid",
     headStyles: { fillColor: [245, 245, 245], textColor: 0, fontSize: 8, fontStyle: "bold" },

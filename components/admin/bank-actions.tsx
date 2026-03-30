@@ -35,6 +35,7 @@ export function BankActions({ bank }: BankActionsProps) {
     state: bank.state || "",
     stateCode: bank.stateCode || "",
     gstNumber: bank.gstNumber || "",
+    panNumber: bank.panNumber || "",
     geoCoords: bank.geoCoords || "",
     bmRep: bank.bmRep || "",
     phone: bank.phone || "",
@@ -145,7 +146,7 @@ export function BankActions({ bank }: BankActionsProps) {
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Branch Address</Label>
               <Textarea 
-                className="bg-gray-50 border-none font-bold"
+                className="bg-gray-50 border-none font-bold min-h-[80px]"
                 value={formData.address}
                 onChange={(e) => setFormData({...formData, address: e.target.value})}
               />
@@ -174,7 +175,7 @@ export function BankActions({ bank }: BankActionsProps) {
 
             <div className="grid grid-cols-2 gap-4">
                <div className="space-y-2">
-                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">GST Registration</Label>
+                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">GST Number</Label>
                  <Input 
                    className="h-11 bg-gray-50 border-none font-bold uppercase"
                    value={formData.gstNumber}
@@ -182,11 +183,22 @@ export function BankActions({ bank }: BankActionsProps) {
                  />
                </div>
                <div className="space-y-2">
-                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Representative</Label>
+                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">PAN Number</Label>
+                 <Input 
+                   className="h-11 bg-gray-50 border-none font-bold uppercase"
+                   value={formData.panNumber}
+                   onChange={(e) => setFormData({...formData, panNumber: e.target.value})}
+                 />
+               </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+               <div className="space-y-2">
+                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Geo Coordinates</Label>
                  <Input 
                    className="h-11 bg-gray-50 border-none font-bold"
-                   value={formData.bmRep}
-                   onChange={(e) => setFormData({...formData, bmRep: e.target.value})}
+                   value={formData.geoCoords}
+                   onChange={(e) => setFormData({...formData, geoCoords: e.target.value})}
                  />
                </div>
             </div>

@@ -80,8 +80,8 @@ export async function POST(req: NextRequest) {
       // Fetch specific Bank record for regional settings (GST)
       const dbBank = await prisma.bank.findFirst({
         where: {
-          bankName: groupRecords[0].bankName,
-          branch: groupRecords[0].branch
+          bankName: groupRecords[0].bankName?.trim(),
+          branch: groupRecords[0].branch?.trim()
         }
       });
 

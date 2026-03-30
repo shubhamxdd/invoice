@@ -38,6 +38,7 @@ export function AddBankDialog() {
     state: "",
     stateCode: "",
     gstNumber: "",
+    panNumber: "",
     geoCoords: "",
     bmRep: "",
     phone: "",
@@ -91,6 +92,7 @@ export function AddBankDialog() {
         state: "",
         stateCode: "",
         gstNumber: "",
+        panNumber: "",
         geoCoords: "",
         bmRep: "",
         phone: "",
@@ -194,6 +196,18 @@ export function AddBankDialog() {
               />
             </div>
             <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">PAN Number</Label>
+              <Input 
+                className="h-11 bg-gray-50 border-none font-bold uppercase"
+                placeholder="AAACH1234F"
+                value={formData.panNumber}
+                onChange={(e) => setFormData({...formData, panNumber: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Geo Coordinates</Label>
               <Input 
                 className="h-11 bg-gray-50 border-none font-bold"
@@ -202,9 +216,6 @@ export function AddBankDialog() {
                 onChange={(e) => setFormData({...formData, geoCoords: e.target.value})}
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">BM Representative</Label>
               <Input 
@@ -214,6 +225,9 @@ export function AddBankDialog() {
                 onChange={(e) => setFormData({...formData, bmRep: e.target.value})}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Phone</Label>
               <Input 
@@ -223,9 +237,6 @@ export function AddBankDialog() {
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Email Address</Label>
               <Input 
@@ -235,6 +246,9 @@ export function AddBankDialog() {
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Parent Company</Label>
               <Select value={formData.companyId} onValueChange={(v) => setFormData({...formData, companyId: v})}>
@@ -249,9 +263,6 @@ export function AddBankDialog() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Template Type</Label>
               <Select value={formData.templateType} onValueChange={(v) => setFormData({...formData, templateType: v})}>
@@ -265,6 +276,9 @@ export function AddBankDialog() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Branch Status</Label>
               <Select value={formData.isActive ? "active" : "inactive"} onValueChange={(v) => setFormData({...formData, isActive: v === "active"})}>
