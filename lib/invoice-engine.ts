@@ -77,7 +77,7 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
     head: [[{ content: "Details of Recipient", colSpan: 2 }]],
     body: [
       ["Name & Address :", `${bankName} ${bank?.address || records[0]?.address || ""}`],
-      ["State along with the State Code :", `${bank?.state || "Delhi"} (${bank?.state === "Delhi" ? "07" : "-"})`],
+      ["State along with the State Code :", `${bank?.state || "Delhi"} (${bank?.stateCode || "-"})`],
       ["GST No. :", bank?.gstNumber || "-"],
       ["PAN No. :", bank?.panNumber || "-"]
     ],
@@ -257,7 +257,76 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
  * Premium Master Excel Template Generator
  * Closely mirrors the 2-section PDF layout.
  */
+
+/**
+ * AI-Trained Custom PDF Generator (Format Cloning)
+ * This function overlays MIS data onto a literal background PDF 
+ * based on the spatial blueprint learned during the AI training phase.
+ */
+export async function generateTrainedPdfInvoice(records: any[], company: any, blueprintRaw: any, options: any) {
+  try {
+    const { PDFDocument, rgb, StandardFonts } = await import("pdf-lib");
+    
+    // 1. Load the original template PDF (the master background)
+    const templateBytes = await fs.readFile(path.join(process.cwd(), "public", options.templatePath));
+    const pdfDoc = await PDFDocument.load(templateBytes);
+    const pages = pdfDoc.getPages();
+    const firstPage = pages[0];
+    const { width, height } = firstPage.getSize();
+
+    // 2. Load the Spatial Blueprint
+    const blueprint = typeof blueprintRaw === "string" ? JSON.parse(blueprintRaw) : blueprintRaw;
+    const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+    // Dynamic data calculations
+    const subTotal = records.reduce((sum, r) => sum + (r.rate * 1 || 0), 0);
+    const taxRate = 0.18; 
+    const grandTotal = subTotal * (1 + taxRate);
+
+    // 3. System Variable -> MIS Data Mapping
+    const dataMap: Record<string, string> = {
+      "invoice_no": records[0]?.invoiceNo || "N/A",
+      "date": new Date().toLocaleDateString("en-GB"),
+      "billing_month": records[0]?.month || "FOR THE MONTH OF " + (records[0]?.month || ""),
+      "gstin": company.gstNumber || "-",
+      "company_name": company.name || "-",
+      "total": grandTotal.toLocaleString("en-IN"),
+      "subtotal": subTotal.toLocaleString("en-IN"),
+      "recipient_name": records[0]?.bankName || "N/A",
+    };
+
+    // 4. Spatial Injection (Mapping the X,Y coordinates)
+    for (const [key, field] of Object.entries(blueprint.fields as any)) {
+      const val = dataMap[key] || "";
+      if (!val) continue;
+
+      const f = field as any;
+      
+      // Azure returns top-left coords, pdf-lib uses bottom-left. 
+      // Coordinate transformation: y_pdf = page_height - y_azure
+      const drawX = f.x;
+      const drawY = height - f.y - (f.h || 10);
+
+      firstPage.drawText(String(val), {
+        x: drawX,
+        y: drawY,
+        size: f.fontSize || 9,
+        font: font,
+        color: rgb(0, 0, 0),
+      });
+    }
+
+    const pdfBytes = await pdfDoc.save();
+    return Buffer.from(pdfBytes);
+
+  } catch (err) {
+    console.error("Trained generation failed, ensure pdf-lib is installed:", err);
+    throw new Error("Could not generate custom invoice. Verify pdf-lib installation.");
+  }
+}
+
 export async function generateExcelInvoice(records: any[], company: any, filename: string, options: any) {
+  // ... (rest of the code remains same)
   const workbook = new ExcelJS.Workbook();
   const bank = options.bank;
   const bankName = bank?.bankName || records[0]?.bankName || "Standard FI";

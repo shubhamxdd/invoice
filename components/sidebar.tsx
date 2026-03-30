@@ -17,6 +17,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Brain,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ const adminLinks = [
   { name: "User Management", href: "/admin/users", icon: Users },
   { name: "Company Management", href: "/admin/companies", icon: Building2 },
   { name: "Bank Management", href: "/admin/banks", icon: Landmark },
+  { name: "Format Training", href: "/admin/templates", icon: Brain },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
