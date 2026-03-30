@@ -144,8 +144,8 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
     body: [
       ["PAN No", company.panNumber || "—", "Bank Name", company.bankName || "—"],
       ["GST No", company.gstNumber || "—", "A/c No.", company.accountNumber || "—"],
-      ["HSN/SAC Code", "—", "IFSC Code", company.ifscCode || "—"],
-      ["GST Composite Scheme", "—", "", ""]
+      ["HSN/SAC Code", company.sacHsnCode || "—", "IFSC Code", company.ifscCode || "—"],
+      // ["GST Composite Scheme", "—", "", ""]
     ],
     theme: "grid",
     headStyles: { fillColor: [245, 245, 245], textColor: 0, fontStyle: "bold" },
@@ -517,7 +517,7 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
   const vDetRows = [
     ["PAN No", company.panNumber || "—", "Bank Name", company.bankName || "—"],
     ["GST No", company.gstNumber || "—", "A/c No.", company.accountNumber || "—"],
-    ["HSN/SAC Code", "—", "IFSC Code", company.ifscCode || "—"],
+    ["HSN/SAC Code", company.sacHsnCode || "—", "IFSC Code", company.ifscCode || "—"],
     ["GST Composite Scheme", "—", "", ""]
   ];
   vDetRows.forEach(vr => {

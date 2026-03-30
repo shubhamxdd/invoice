@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, Plus, Loader2, Mail, CreditCard, MapPin, CheckCircle2, X, FileText, Landmark } from "lucide-react";
+import { Building2, Plus, Loader2, Mail, CreditCard, MapPin, CheckCircle2, X, FileText, Landmark, FileDigit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,6 +30,7 @@ export function AddCompanyDialog() {
     panNumber: "",
     cin: "",
     udyamNumber: "",
+    sacHsnCode: "",
     contactEmail: "",
     bankName: "",
     branchName: "",
@@ -54,7 +55,7 @@ export function AddCompanyDialog() {
       setIsOpen(false);
       setFormData({ 
         name: "", address: "", gstNumber: "", panNumber: "", 
-        cin: "", udyamNumber: "", contactEmail: "", 
+        cin: "", udyamNumber: "", sacHsnCode: "", contactEmail: "", 
         bankName: "", branchName: "", accountNumber: "", ifscCode: "" 
       });
       router.refresh();
@@ -148,6 +149,20 @@ export function AddCompanyDialog() {
                     />
                   </div>
                 </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">SAC/HSN Code *</Label>
+                  <div className="relative group">
+                    <FileDigit className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
+                    <Input 
+                      className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm uppercase font-mono tracking-wider"
+                      placeholder="996791"
+                      required
+                      value={formData.sacHsnCode}
+                      onChange={(e) => setFormData({...formData, sacHsnCode: e.target.value})}
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">UDYAM Registration</Label>
                   <div className="relative group">
@@ -160,6 +175,7 @@ export function AddCompanyDialog() {
                     />
                   </div>
                 </div>
+             </div>
              </div>
 
              <div className="space-y-2">

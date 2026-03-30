@@ -35,6 +35,7 @@ export function CompanyActions({ company }: CompanyActionsProps) {
     panNumber: company.panNumber || "",
     cin: (company as any).cin || "",
     udyamNumber: (company as any).udyamNumber || "",
+    sacHsnCode: (company as any).sacHsnCode || "",
     contactEmail: company.contactEmail || "",
     bankName: (company as any).bankName || "",
     branchName: (company as any).branchName || "",
@@ -162,6 +163,15 @@ export function CompanyActions({ company }: CompanyActionsProps) {
                      onChange={(e) => setFormData({...formData, cin: e.target.value})}
                    />
                  </div>
+               <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">SAC/HSN Code</Label>
+                   <Input 
+                     className="h-11 bg-gray-50 border-none font-bold uppercase tracking-wider"
+                     value={formData.sacHsnCode}
+                     onChange={(e) => setFormData({...formData, sacHsnCode: e.target.value})}
+                   />
+                 </div>
                  <div className="space-y-2">
                    <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">UDYAM Registration</Label>
                    <Input 
@@ -170,6 +180,7 @@ export function CompanyActions({ company }: CompanyActionsProps) {
                      onChange={(e) => setFormData({...formData, udyamNumber: e.target.value})}
                    />
                  </div>
+               </div>
                </div>
 
                <div className="space-y-2">

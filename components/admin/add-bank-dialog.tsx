@@ -35,6 +35,8 @@ export function AddBankDialog() {
     bankName: "",
     branch: "",
     address: "",
+    state: "",
+    stateCode: "",
     gstNumber: "",
     geoCoords: "",
     bmRep: "",
@@ -86,6 +88,8 @@ export function AddBankDialog() {
         bankName: "",
         branch: "",
         address: "",
+        state: "",
+        stateCode: "",
         gstNumber: "",
         geoCoords: "",
         bmRep: "",
@@ -115,7 +119,7 @@ export function AddBankDialog() {
         <DialogHeader className="p-8 bg-zinc-900 text-white rounded-t-[2rem]">
           <DialogTitle className="text-2xl font-black italic tracking-tighter flex items-center gap-3 leading-none">
              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 shadow-inner border border-white/10">
-                <Landmark className="h-5 w-5" />
+                < Landmark className="h-5 w-5" />
              </div>
              Add New Bank Profile
           </DialogTitle>
@@ -156,6 +160,27 @@ export function AddBankDialog() {
               value={formData.address}
               onChange={(e) => setFormData({...formData, address: e.target.value})}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">State</Label>
+              <Input 
+                className="h-11 bg-gray-50 border-none font-bold"
+                placeholder="e.g. Maharashtra"
+                value={formData.state}
+                onChange={(e) => setFormData({...formData, state: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">State Code</Label>
+              <Input 
+                className="h-11 bg-gray-50 border-none font-bold"
+                placeholder="e.g. 27"
+                value={formData.stateCode}
+                onChange={(e) => setFormData({...formData, stateCode: e.target.value})}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6">

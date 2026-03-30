@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const { 
-      name, address, gstNumber, panNumber, cin, udyamNumber,
+      name, address, gstNumber, panNumber, cin, udyamNumber, sacHsnCode,
       contactEmail, email, bankName, branchName, accountNumber, ifscCode 
     } = await req.json();
 
@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
         panNumber,
         cin,
         udyamNumber,
+        sacHsnCode,
         contactEmail: contactEmail || email,
         bankName,
         branchName,

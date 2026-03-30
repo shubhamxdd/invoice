@@ -80,6 +80,8 @@ export async function POST(req: NextRequest) {
           update: {
             templateType: String(formatType).trim(),
             address: getVal(["Address"]) ? String(getVal(["Address"])).trim() : undefined,
+            state: getVal(["State"]) ? String(getVal(["State"])).trim() : undefined,
+            stateCode: getVal(["State Code"]) ? String(getVal(["State Code"])).trim() : undefined,
             gstNumber: getVal(["GST Number"]) ? String(getVal(["GST Number"])).trim() : undefined,
           },
           create: {
@@ -87,6 +89,8 @@ export async function POST(req: NextRequest) {
             branch: String(branch).trim(),
             templateType: String(formatType).trim(),
             address: getVal(["Address"]) ? String(getVal(["Address"])).trim() : undefined,
+            state: getVal(["State"]) ? String(getVal(["State"])).trim() : undefined,
+            stateCode: getVal(["State Code"]) ? String(getVal(["State Code"])).trim() : undefined,
             gstNumber: getVal(["GST Number"]) ? String(getVal(["GST Number"])).trim() : undefined,
           },
         });

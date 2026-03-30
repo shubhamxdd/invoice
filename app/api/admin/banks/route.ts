@@ -1,64 +1,53 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session || session.user?.role !== "admin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { searchParams } = new URL(req.url);
-  const q = searchParams.get("q") || "";
-
+/**
+ * GET /api/admin/banks
+ * Fetches all available bank profiles for template training.
+ */
+export async function GET() {
   try {
     const banks = await prisma.bank.findMany({
-      where: {
-        OR: [
-          { bankName: { contains: q } },
-          { branch: { contains: q } },
-        ],
-      },
-      orderBy: { bankName: "asc" },
+      where: { isActive: true },
+      orderBy: { bankName: 'asc' }
     });
     return NextResponse.json(banks);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: "Failed to fetch banks" }, { status: 500 });
   }
 }
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session || session.user?.role !== "admin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+/**
+ * POST /api/admin/banks
+ * Creates a new bank profile.
+ */
+export async function POST(req: Request) {
   try {
-    const data = await req.json();
-    
-    if (!data.bankName || !data.branch) {
-      return NextResponse.json({ error: "Bank name and branch are required" }, { status: 400 });
-    }
-
+    const body = await req.json();
     const bank = await prisma.bank.create({
       data: {
-        bankName: data.bankName,
-        branch: data.branch,
-        address: data.address,
-        gstNumber: data.gstNumber,
-        geoCoords: data.geoCoords,
-        bmRep: data.bmRep,
-        phone: data.phone,
-        email: data.email,
-        companyId: data.companyId || null,
-        templateType: data.templateType || "standard",
-        isActive: data.isActive !== undefined ? data.isActive : true,
-      },
+        bankName: body.bankName,
+        branch: body.branch,
+        address: body.address,
+        state: body.state,
+        stateCode: body.stateCode,
+        gstNumber: body.gstNumber,
+        panNumber: body.panNumber,
+        udyamNumber: body.udyamNumber,
+        bmRep: body.bmRep,
+        phone: body.phone,
+        email: body.email,
+        companyId: body.companyId,
+        templateType: body.templateType || "standard",
+      }
     });
 
     return NextResponse.json(bank);
-  } catch (error: any) {
-    console.error("Bank creation error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err: any) {
+    if (err.code === 'P2002') {
+      return NextResponse.json({ error: "A bank with this name and branch already exists." }, { status: 400 });
+    }
+    console.error("Bank creation failed:", err);
+    return NextResponse.json({ error: "Failed to create bank" }, { status: 500 });
   }
 }
