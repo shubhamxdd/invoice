@@ -438,9 +438,9 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
 
   const recBody = [
     ["Name & Address :", `${bankName} ${bank?.address || records[0]?.address || ""}`],
-    ["State along with the State Code :", `${bank?.state || "Delhi"} (${bank?.state === "Delhi" ? "07" : "-"})`],
-    ["GST No. :", bank?.gstNumber || "-"],
-    ["PAN No. :", bank?.panNumber || "-"]
+    ["State along with the State Code :", `${bank?.state || records[0]?.state || "Delhi"} (${bank?.stateCode || records[0]?.stateCode || "-"})`],
+    ["GST No. :", bank?.gstNumber || records[0]?.gstNumber || records[0]?.["GST Number"] || records[0]?.["GST Registration"] || "-"],
+    ["PAN No. :", bank?.panNumber || records[0]?.panNumber || records[0]?.["PAN Number"] || records[0]?.["PAN Registration"] || "-"]
   ];
   recBody.forEach(item => {
     const r = sheet1.addRow([item[0], item[1]]);

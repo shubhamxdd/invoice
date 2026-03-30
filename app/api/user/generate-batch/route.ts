@@ -54,14 +54,19 @@ export async function POST(req: NextRequest) {
       groups[groupKey].push(r);
     });
 
-    // 3. Initiate ZIP
+    // 3. Fetch all active banks for matching
+    const activeBanks = await prisma.bank.findMany({
+      where: { isActive: true }
+    });
+
+    // 4. Initiate ZIP
     const zip = new JSZip();
     const dateStr = new Date().toISOString().split('T')[0];
     const timestamp = Date.now().toString();
 
     const batchInvoiceNo = `INV-${dateStr.replace(/-/g, '')}-${Math.floor(Math.random() * 8999) + 1000}`;
 
-    // 4. Generate each group
+    // 5. Generate each group
     for (const [key, groupRecords] of Object.entries(groups)) {
       const rawBankName = groupRecords[0].bankName || "Unknown";
       const bankName = rawBankName.trim();
@@ -77,13 +82,11 @@ export async function POST(req: NextRequest) {
         ? `${sanitizedBank}/${sanitizedBranch}`
         : sanitizedBank;
 
-      // Fetch specific Bank record for regional settings (GST)
-      const dbBank = await prisma.bank.findFirst({
-        where: {
-          bankName: groupRecords[0].bankName?.trim(),
-          branch: groupRecords[0].branch?.trim()
-        }
-      });
+      // Smart Case-Insensitive Match
+      const dbBank = activeBanks.find(b => 
+        b.bankName?.toLowerCase().trim() === groupRecords[0].bankName?.toLowerCase().trim() &&
+        b.branch?.toLowerCase().trim() === groupRecords[0].branch?.toLowerCase().trim()
+      );
 
       // PDF Output (Standardized 2-Section Layout)
       if (options.format === "pdf" || options.format === "both") {
