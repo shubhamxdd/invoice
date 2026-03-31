@@ -19,6 +19,8 @@ export async function GET(req: NextRequest) {
   const dateFrom = searchParams.get("dateFrom") || "";
   const dateTo = searchParams.get("dateTo") || "";
 
+  const searchColumn = searchParams.get("searchColumn") || "all";
+
   const where: any = {
     misFile: { uploadedBy: session.user.id },
   };
@@ -26,11 +28,18 @@ export async function GET(req: NextRequest) {
   if (misFileId) where.misFileId = misFileId;
 
   if (q) {
-    where.OR = [
-      { applicantName: { contains: q } },
-      { eepacRefNo: { contains: q } },
-      { appRefNo: { contains: q } },
-    ];
+    if (searchColumn === "all") {
+      where.OR = [
+        { applicantName: { contains: q } },
+        { eepacRefNo: { contains: q } },
+        { appRefNo: { contains: q } },
+        { city: { contains: q } },
+        { bankName: { contains: q } },
+        { branch: { contains: q } },
+      ];
+    } else {
+      where[searchColumn] = { contains: q };
+    }
   }
 
   if (bank && bank !== "all") where.bankName = bank;

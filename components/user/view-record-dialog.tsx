@@ -135,13 +135,13 @@ export function ViewRecordDialog({ record, isOpen, onOpenChange }: ViewRecordDia
                          {section.title}
                       </h3>
                    </div>
-                   <div className="grid gap-x-4 gap-y-3">
+                   <div className="grid grid-cols-1 gap-y-4">
                       {section.fields.map((f, fIdx) => (
-                        <div key={fIdx} className={`space-y-0.5 ${f.highlight ? 'p-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20' : ''}`}>
-                           <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 leading-none">
+                        <div key={fIdx} className={`space-y-1 min-w-0 ${f.highlight ? 'p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/20 ring-1 ring-emerald-100' : ''}`}>
+                           <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-none">
                               {f.label}
                            </p>
-                           <p className={`text-[12px] font-bold tracking-tight ${f.highlight ? 'text-emerald-600 dark:text-emerald-400 font-black italic' : 'text-gray-900 dark:text-gray-100'} leading-snug truncate`}>
+                           <p className={`text-[13px] font-bold tracking-tight break-words ${f.highlight ? 'text-emerald-600 dark:text-emerald-400 font-black italic' : 'text-gray-900 dark:text-gray-100'} leading-relaxed`}>
                               {f.value || "—"}
                            </p>
                         </div>
