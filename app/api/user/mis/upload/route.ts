@@ -5,6 +5,24 @@ import * as XLSX from "xlsx";
 import path from "path";
 import fs from "fs/promises";
 
+// Helper to convert Excel serial date to string
+function formatExcelDate(value: any): string {
+  if (typeof value === "number" && value > 40000) {
+    try {
+      // Excel dates are days since 1900-01-01
+      const date = new Date((value - 25569) * 86400 * 1000);
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const day = date.getDate().toString().padStart(2, "0");
+      const month = months[date.getMonth()];
+      const year = date.getFullYear().toString().slice(-2);
+      return `${day}-${month}-${year}`;
+    } catch (e) {
+      return String(value);
+    }
+  }
+  return String(value || "");
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session || session.user?.role !== "user") {
@@ -88,6 +106,13 @@ export async function POST(req: NextRequest) {
         // Skip records with no applicant and no ref no (Double validation for ghost rows)
         if (!applicantName && !eepacRefNo) return null;
 
+        const initiationDate = formatExcelDate(getVal("initiationDate", ["Initiation Date"]));
+        const visitDate = formatExcelDate(getVal("visitDate", ["Visit Date"]));
+        const month = formatExcelDate(getVal("month", ["Month"]));
+        const followUpDate = formatExcelDate(getVal("followUpDate", ["Follow Up Date"]));
+
+        const reportSent = formatExcelDate(getVal("reportSent", ["Report Sent"]));
+
         const rate = parseFloat(getVal("rate", ["Rate"]) || "0") || 0;
         const conv = parseFloat(getVal("conveyance", ["Conveyance"]) || "0") || 0;
         const addl = parseFloat(getVal("additionalFee", ["Aditional Fee", "Additional Fee"]) || "0") || 0;
@@ -110,22 +135,22 @@ export async function POST(req: NextRequest) {
           customerContact: String(getVal("customerContact", ["Customer Contact No", "Customer Contact"]) || ""),
           branch: String(getVal("branch", ["Branch"]) || ""),
           rmContact: String(getVal("rmContact", ["RM Contact Number", "RM Contact"]) || ""),
-          initiationDate: String(getVal("initiationDate", ["Initiation Date"]) || ""),
+          initiationDate: initiationDate,
           time: String(getVal("time", ["Time"]) || ""),
           initiatedBy: String(getVal("initiatedBy", ["Initiated by", "Initiated By"]) || ""),
           visitDone: String(getVal("visitDone", ["Visit Done"]) || ""),
-          visitDate: String(getVal("visitDate", ["Visit Date"]) || ""),
-          reportSent: String(getVal("reportSent", ["Report Sent"]) || ""),
+          visitDate: visitDate,
+          reportSent: reportSent,
           status1: String(getVal("status1", ["Status1"]) || ""),
           status2: String(getVal("status2", ["Status2"]) || ""),
           status3: String(getVal("status3", ["Status3"]) || ""),
           status4: String(getVal("status4", ["Status4"]) || ""),
           visitDoneBy: String(getVal("visitDoneBy", ["Visit Done by", "Visit Done By"]) || ""),
-          followUpDate: String(getVal("followUpDate", ["Follow Up Date"]) || ""),
+          followUpDate: followUpDate,
           specialFee: parseFloat(getVal("specialFee", ["Special Fee"]) || "0") || 0,
           serviceLocation: String(getVal("serviceLocation", ["Service Location"]) || ""),
           branch1: String(getVal("branch1", ["Branch"]) || ""),
-          month: String(getVal("month", ["Month"]) || ""),
+          month: month,
           nameOfBankFi: String(getVal("nameOfBankFi", ["Name of Bank/FI"]) || ""),
           status: String(getVal("status", ["Status"]) || ""),
           rate: rate,
