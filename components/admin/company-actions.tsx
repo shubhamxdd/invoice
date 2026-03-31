@@ -31,6 +31,7 @@ export function CompanyActions({ company }: CompanyActionsProps) {
   const [formData, setFormData] = useState({
     name: company.name,
     address: company.address || "",
+    state: (company as any).state || "Delhi",
     gstNumber: company.gstNumber || "",
     panNumber: company.panNumber || "",
     cin: (company as any).cin || "",
@@ -183,13 +184,24 @@ export function CompanyActions({ company }: CompanyActionsProps) {
                </div>
                </div>
 
-               <div className="space-y-2">
-                 <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Registered Office Address</Label>
-                 <Textarea 
-                   className="min-h-[80px] bg-gray-50 border-none font-bold leading-relaxed shadow-sm"
-                   value={formData.address}
-                   onChange={(e) => setFormData({...formData, address: e.target.value})}
-                 />
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Registered Office Address</Label>
+                   <Textarea 
+                     className="min-h-[80px] bg-gray-50 border-none font-bold leading-relaxed shadow-sm"
+                     value={formData.address}
+                     onChange={(e) => setFormData({...formData, address: e.target.value})}
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Company State</Label>
+                   <Input 
+                     className="h-11 bg-gray-50 border-none font-bold shadow-sm"
+                     placeholder="e.g. Haryana"
+                     value={formData.state}
+                     onChange={(e) => setFormData({...formData, state: e.target.value})}
+                   />
+                 </div>
                </div>
 
                <div className="space-y-2">

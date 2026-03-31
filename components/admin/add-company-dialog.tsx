@@ -26,6 +26,7 @@ export function AddCompanyDialog() {
   const [formData, setFormData] = useState({
     name: "",
     address: "",
+    state: "",
     gstNumber: "",
     panNumber: "",
     cin: "",
@@ -54,7 +55,7 @@ export function AddCompanyDialog() {
       toast.success("Company profile registered successfully!");
       setIsOpen(false);
       setFormData({ 
-        name: "", address: "", gstNumber: "", panNumber: "", 
+        name: "", address: "", state: "", gstNumber: "", panNumber: "", 
         cin: "", udyamNumber: "", sacHsnCode: "", contactEmail: "", 
         bankName: "", branchName: "", accountNumber: "", ifscCode: "" 
       });
@@ -178,18 +179,33 @@ export function AddCompanyDialog() {
              </div>
              </div>
 
-             <div className="space-y-2">
-               <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Registered Office Address *</Label>
-               <div className="relative group">
-                 <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
-                 <Textarea 
-                   className="pl-9 min-h-[80px] bg-gray-50 border-none font-bold shadow-sm leading-relaxed"
-                   placeholder="Enter full legal address..."
-                   required
-                   value={formData.address}
-                   onChange={(e) => setFormData({...formData, address: e.target.value})}
-                 />
-               </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Registered Office Address *</Label>
+                  <div className="relative group">
+                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
+                    <Textarea 
+                      className="pl-9 min-h-[80px] bg-gray-50 border-none font-bold shadow-sm leading-relaxed"
+                      placeholder="Enter full legal address..."
+                      required
+                      value={formData.address}
+                      onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Company State *</Label>
+                  <div className="relative group">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
+                    <Input 
+                      className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm"
+                      placeholder="e.g. Haryana"
+                      required
+                      value={formData.state}
+                      onChange={(e) => setFormData({...formData, state: e.target.value})}
+                    />
+                  </div>
+                </div>
              </div>
 
              <div className="space-y-2">

@@ -26,11 +26,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const { 
-      name, address, gstNumber, panNumber, cin, udyamNumber, sacHsnCode,
+      name, address, state, gstNumber, panNumber, cin, udyamNumber, sacHsnCode,
       contactEmail, email, bankName, branchName, accountNumber, ifscCode 
     } = await req.json();
 
-    if (!name || !gstNumber || !address) {
+    if (!name || !gstNumber || !address || !state) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         address,
+        state,
         gstNumber,
         panNumber,
         cin,

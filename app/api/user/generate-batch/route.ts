@@ -43,11 +43,11 @@ export async function POST(req: NextRequest) {
     records.forEach((r) => {
       let groupKey = "default";
       if (options.groupByBank && options.groupByBranch) {
-        groupKey = `${r.bankName}_${r.branch}`;
+        groupKey = `${String(r.bankName).toLowerCase().trim()}_${String(r.branch).toLowerCase().trim()}`;
       } else if (options.groupByBank) {
-        groupKey = String(r.bankName || "Unknown Bank");
+        groupKey = String(r.bankName || "Unknown Bank").toLowerCase().trim();
       } else if (options.groupByBranch) {
-        groupKey = String(r.branch || "Unknown Branch");
+        groupKey = String(r.branch || "Unknown Branch").toLowerCase().trim();
       }
       
       if (!groups[groupKey]) groups[groupKey] = [];
@@ -83,10 +83,27 @@ export async function POST(req: NextRequest) {
         : sanitizedBank;
 
       // Smart Case-Insensitive Match
-      const dbBank = activeBanks.find(b => 
-        b.bankName?.toLowerCase().trim() === groupRecords[0].bankName?.toLowerCase().trim() &&
-        b.branch?.toLowerCase().trim() === groupRecords[0].branch?.toLowerCase().trim()
-      );
+      console.log(`[DEBUG] Step 1 (Exact): Matching MIS Record: Bank="${groupRecords[0].bankName}", Branch="${groupRecords[0].branch}"`);
+      let dbBank = activeBanks.find(b => {
+        const isMatch = b.bankName?.toLowerCase().trim() === groupRecords[0].bankName?.toLowerCase().trim() &&
+                        b.branch?.toLowerCase().trim() === groupRecords[0].branch?.toLowerCase().trim();
+        return isMatch;
+      });
+
+      // Fallback: If exact (bank+branch) fails, try matching on Bank Name ONLY (if branch was wrong/slightly different)
+      if (!dbBank) {
+        console.log(`[DEBUG] Step 2 (Fuzzy): No exact match. Searching by Bank Name ONLY: "${groupRecords[0].bankName}"`);
+        dbBank = activeBanks.find(b => 
+          b.bankName?.toLowerCase().trim() === groupRecords[0].bankName?.toLowerCase().trim()
+        );
+      }
+
+      if (!dbBank) {
+        console.warn(`[WARNING] No Master Bank record found in DB for: ${groupRecords[0].bankName} (${groupRecords[0].branch})`);
+        console.log(`[DEBUG] Available Bank Names:`, Array.from(new Set(activeBanks.map(b => b.bankName))));
+      } else {
+        console.log(`[SUCCESS] Matched database profile: ${dbBank.bankName} (${dbBank.branch})`);
+      }
 
       // PDF Output (Standardized 2-Section Layout)
       if (options.format === "pdf" || options.format === "both") {
@@ -106,7 +123,8 @@ export async function POST(req: NextRequest) {
       if (options.format === "excel" || options.format === "both") {
         const excelFilename = `${filenameBase}.xlsx`;
         const excelBuffer = await generateExcelInvoice(groupRecords, company, excelFilename, { 
-            ...options
+            ...options,
+            bank: dbBank 
         });
         
         if (excelBuffer) {
