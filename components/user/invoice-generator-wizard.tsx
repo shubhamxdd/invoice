@@ -348,42 +348,89 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                       </DialogDescription>
                     </DialogHeader>
 
-                    <div className="p-0 overflow-y-auto max-h-[60vh]">
-                       <Table>
-                          <TableHeader className="bg-gray-50/80 sticky top-0 z-10">
-                             <TableRow>
-                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-gray-400 pl-8">Applicant</TableHead>
-                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-gray-400">EEPAC Ref</TableHead>
-                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-gray-400">Bank / Branch</TableHead>
-                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-gray-400">Date</TableHead>
-                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-gray-400 text-right pr-8">Amount</TableHead>
+                    <div className="p-0 overflow-x-auto overflow-y-auto max-h-[60vh]">
+                       <Table className="min-w-[5000px] border-separate border-spacing-0">
+                          <TableHeader className="bg-gray-50/80 sticky top-0 z-20">
+                             <TableRow className="uppercase text-[9px] font-black tracking-widest text-gray-500">
+                                <TableHead className="pl-8 w-[300px]">Applicant Name</TableHead>
+                                <TableHead className="w-[150px]">EEPAC Ref</TableHead>
+                                <TableHead className="w-[150px]">App Ref No</TableHead>
+                                <TableHead className="w-[150px]">Bank Ref No</TableHead>
+                                <TableHead className="w-[200px]">Bank Name</TableHead>
+                                <TableHead className="w-[150px]">Branch</TableHead>
+                                <TableHead className="w-[150px]">Case Type</TableHead>
+                                <TableHead className="w-[120px]">Status</TableHead>
+                                <TableHead className="w-[150px] text-right pr-4">Total Amount</TableHead>
+                                <TableHead className="w-[300px]">Address</TableHead>
+                                <TableHead className="w-[150px]">City</TableHead>
+                                <TableHead className="w-[150px]">State</TableHead>
+                                <TableHead className="w-[100px]">Pin Code</TableHead>
+                                <TableHead className="w-[150px]">Initiation Date</TableHead>
+                                <TableHead className="w-[100px]">Time</TableHead>
+                                <TableHead className="w-[100px]">Visit Done</TableHead>
+                                <TableHead className="w-[150px]">Visit Date</TableHead>
+                                <TableHead className="w-[150px]">Visit Done By</TableHead>
+                                <TableHead className="w-[150px]">Report Sent</TableHead>
+                                <TableHead className="w-[150px]">Follow Up Date</TableHead>
+                                <TableHead className="w-[120px]">Month</TableHead>
+                                <TableHead className="w-[150px]">Bill Sent</TableHead>
+                                <TableHead className="w-[120px]">Rate</TableHead>
+                                <TableHead className="w-[100px]">Distance</TableHead>
+                                <TableHead className="w-[120px]">Conv.</TableHead>
+                                <TableHead className="w-[120px]">Addl Fee</TableHead>
+                                <TableHead className="w-[120px]">Amt Recd</TableHead>
+                                <TableHead className="w-[150px]">GST Number</TableHead>
+                                <TableHead className="w-[150px]">PAN Number</TableHead>
                              </TableRow>
                           </TableHeader>
                           <TableBody>
                              {previewData.map((record) => (
-                               <TableRow key={record.id} className="group hover:bg-primary/[0.01]">
+                               <TableRow key={record.id} className="group hover:bg-primary/[0.01] text-[10px] font-bold text-gray-600">
                                   <TableCell className="pl-8 py-4">
                                      <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-gray-900">{record.applicantName}</span>
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase italic leading-none mt-0.5">{record.city || "Unknown City"}</span>
+                                        <span className="text-sm font-bold text-gray-900 uppercase italic tracking-tighter">{record.applicantName}</span>
+                                        <span className="text-[10px] font-black text-gray-400 uppercase leading-none mt-0.5 tracking-widest">{record.city || "-"}</span>
                                      </div>
                                   </TableCell>
                                   <TableCell className="font-mono text-xs font-black text-primary">{record.eepacRefNo}</TableCell>
+                                  <TableCell className="font-mono">{record.appRefNo || "-"}</TableCell>
+                                  <TableCell className="font-mono">{record.bankRefNo || "-"}</TableCell>
+                                  <TableCell className="font-black text-blue-600 uppercase italic leading-none">{record.bankName}</TableCell>
+                                  <TableCell className="uppercase">{record.branch}</TableCell>
+                                  <TableCell className="font-black text-purple-600 uppercase italic leading-none">{record.caseType}</TableCell>
                                   <TableCell>
-                                     <div className="flex flex-col text-[10px] font-bold text-gray-500 uppercase">
-                                        <span className="flex items-center gap-1.5"><Landmark className="h-3 w-3" /> {record.bankName}</span>
-                                        <span className="mt-0.5 ml-4 opacity-60">{record.branch}</span>
-                                     </div>
+                                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 border-none px-1.5 h-4 text-[8px] font-black uppercase tracking-widest leading-none">
+                                      {record.status || "-"}
+                                    </Badge>
                                   </TableCell>
-                                  <TableCell className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{record.initiationDate || "-"}</TableCell>
-                                  <TableCell className="text-right pr-8 font-black text-gray-900 italic tracking-tighter">
+                                  <TableCell className="text-right pr-4 font-black text-gray-900 italic tracking-tighter">
                                      ₹{record.total?.toLocaleString() || "0"}
                                   </TableCell>
+                                  <TableCell className="truncate max-w-[300px]">{record.address || "-"}</TableCell>
+                                  <TableCell>{record.city || "-"}</TableCell>
+                                  <TableCell className="uppercase">{record.state || "-"}</TableCell>
+                                  <TableCell>{record.pinCode || "-"}</TableCell>
+                                  <TableCell className="uppercase tracking-tighter">{record.initiationDate || "-"}</TableCell>
+                                  <TableCell>{record.time || "-"}</TableCell>
+                                  <TableCell>{record.visitDone || "-"}</TableCell>
+                                  <TableCell className="uppercase tracking-tighter">{record.visitDate || "-"}</TableCell>
+                                  <TableCell>{record.visitDoneBy || "-"}</TableCell>
+                                  <TableCell className="uppercase tracking-tighter">{record.reportSent || "-"}</TableCell>
+                                  <TableCell className="uppercase tracking-tighter">{record.followUpDate || "-"}</TableCell>
+                                  <TableCell className="uppercase tracking-tighter">{record.month || "-"}</TableCell>
+                                  <TableCell className="uppercase tracking-tighter">{record.billSent || "-"}</TableCell>
+                                  <TableCell>₹{(record.rate || 0).toLocaleString()}</TableCell>
+                                  <TableCell>{record.distance || 0} KM</TableCell>
+                                  <TableCell>₹{(record.conveyance || 0).toLocaleString()}</TableCell>
+                                  <TableCell>₹{(record.additionalFee || 0).toLocaleString()}</TableCell>
+                                  <TableCell>₹{(record.amountReceived || 0).toLocaleString()}</TableCell>
+                                  <TableCell className="font-mono">{record.gstNumber || "-"}</TableCell>
+                                  <TableCell className="font-mono">{record.panNumber || "-"}</TableCell>
                                </TableRow>
                              ))}
                              {previewData.length === 0 && (
                                <TableRow>
-                                 <TableCell colSpan={5} className="h-40 text-center">
+                                 <TableCell colSpan={40} className="h-40 text-center">
                                     <p className="text-sm font-bold text-gray-400 italic">No records found for current filters.</p>
                                  </TableCell>
                                </TableRow>

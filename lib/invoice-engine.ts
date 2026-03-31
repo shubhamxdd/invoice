@@ -71,6 +71,9 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
     styles: { fontSize: 7, cellPadding: 2 }
   });
 
+  console.log(bank);
+  console.log("_--------------------------------------------");
+  console.log(company);
   // 5. Details of Recipient
   autoTable(doc, {
     startY: (doc as any).lastAutoTable.finalY + 5,
