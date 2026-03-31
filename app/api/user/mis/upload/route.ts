@@ -161,9 +161,6 @@ export async function POST(req: NextRequest) {
           billSent: String(getVal("billSent", ["Bill Sent"]) || ""),
           amountReceived: parseFloat(getVal("amountReceived", ["Amount Received"]) || "0") || 0,
           address1: String(getVal("address1", ["Address"]) || ""),
-          stateCode: String(getVal("stateCode", ["State Code", "Code"]) || ""),
-          gstNumber: String(getVal("gstNumber", ["GST Number", "GST Registration", "GST NO", "GST No.", "GSTIN"]) || ""),
-          panNumber: String(getVal("panNumber", ["PAN Number", "PAN Registration", "PAN NO", "PAN No.", "Income Tax PAN"]) || ""),
           rowIndex: i + index,
         };
       }).filter(Boolean) as any[];

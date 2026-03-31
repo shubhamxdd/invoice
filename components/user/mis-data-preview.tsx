@@ -189,10 +189,6 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
                   <SelectItem value="total">Total Amount</SelectItem>
                   <SelectItem value="billSent">Bill Sent Status</SelectItem>
                   <SelectItem value="amountReceived">Amt Received</SelectItem>
-
-                  <div className="px-2 py-1 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 my-1">Taxation</div>
-                  <SelectItem value="gstNumber">GST Number</SelectItem>
-                  <SelectItem value="panNumber">PAN Number</SelectItem>
                 </SelectContent>
              </Select>
           </div>
@@ -345,11 +341,6 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
                   <TableHead className="w-[120px] border-b">Conveyance</TableHead>
                   <TableHead className="w-[120px] border-b">Addl Fee</TableHead>
                   <TableHead className="w-[120px] border-b">Amt Received</TableHead>
-                  
-                  {/* Taxation Group */}
-                  <TableHead className="w-[200px] border-b">GST Number</TableHead>
-                  <TableHead className="w-[200px] border-b">PAN Number</TableHead>
-                  <TableHead className="w-[100px] border-b">State Code</TableHead>
 
                   <TableHead className="text-right px-6 pr-8 sticky right-0 bg-white dark:bg-zinc-950 z-40 border-l border-b">Actions</TableHead>
                 </TableRow>
@@ -437,11 +428,6 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
                       <TableCell>₹{(record.conveyance || 0).toLocaleString()}</TableCell>
                       <TableCell>₹{(record.additionalFee || 0).toLocaleString()}</TableCell>
                       <TableCell>₹{(record.amountReceived || 0).toLocaleString()}</TableCell>
-
-                      {/* Taxation */}
-                      <TableCell className="font-mono">{record.gstNumber || "-"}</TableCell>
-                      <TableCell className="font-mono">{record.panNumber || "-"}</TableCell>
-                      <TableCell>{record.stateCode || "-"}</TableCell>
 
                       <TableCell className="text-right px-6 pr-8 sticky right-0 bg-white dark:bg-zinc-950 z-20 border-l group-hover:bg-gray-50 transition-colors">
                         <div className="flex justify-end gap-2">

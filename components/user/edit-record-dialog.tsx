@@ -64,9 +64,6 @@ export function EditRecordDialog({ record, isOpen, onOpenChange, onSuccess }: Ed
     total: record.total || 0,
     billSent: record.billSent || "",
     amountReceived: record.amountReceived || 0,
-    stateCode: record.stateCode || "",
-    gstNumber: record.gstNumber || "",
-    panNumber: record.panNumber || "",
   });
 
   const handleChange = (key: string, value: any) => {
@@ -172,14 +169,6 @@ export function EditRecordDialog({ record, isOpen, onOpenChange, onSuccess }: Ed
         { label: "Bill Sent", key: "billSent" },
         { label: "Amount Received", key: "amountReceived", type: "number" },
       ]
-    },
-    {
-        title: "Taxation Details",
-        fields: [
-          { label: "GST Number", key: "gstNumber" },
-          { label: "PAN Number", key: "panNumber" },
-          { label: "State Code", key: "stateCode" },
-        ]
     }
   ];
 

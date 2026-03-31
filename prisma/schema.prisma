@@ -154,9 +154,6 @@ model MisRecord {
   billSent          String?
   amountReceived    Float?
   address1          String?
-  stateCode         String?
-  gstNumber         String?
-  panNumber         String?
   rowIndex          Int      @default(0)
   createdAt         DateTime @default(now())
 }
