@@ -76,91 +76,147 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Extract Records using Mapping
+    // Extract Records using Mapping (HIGH PERFORMANCE REWRITE)
     const chunkSize = 100;
     let totalInserted = 0;
     
+    // Step 1: Pre-calculate the mapping for all system fields ONCE
+    // This removes the need to search through headers for every single row
+    const targetFieldConfigs = [
+      { key: "sNo", aliases: ["S. No", "S No", "SNo"] },
+      { key: "eepacRefNo", aliases: ["EEPAC Reference No", "EEPAC Ref"] },
+      { key: "appRefNo", aliases: ["App Reference No.", "App Ref No", "App Ref"] },
+      { key: "bankRefNo", aliases: ["Bank Reference No", "Bank Ref"] },
+      { key: "additionalBankRef", aliases: ["Additional Bank Reference Number", "Additional Bank Ref"] },
+      { key: "applicantName", aliases: ["Applicant Name", "Applicant"] },
+      { key: "address", aliases: ["Address"] },
+      { key: "city", aliases: ["City"] },
+      { key: "state", aliases: ["State"] },
+      { key: "pinCode", aliases: ["Pin Code", "Pincode"] },
+      { key: "caseType", aliases: ["Case Type"] },
+      { key: "bankName", aliases: ["Bank", "Name of Bank/FI", "Bank Name"] },
+      { key: "customerContact", aliases: ["Customer Contact No", "Customer Contact"] },
+      { key: "branch", aliases: ["Branch"] },
+      { key: "rmContact", aliases: ["RM Contact Number", "RM Contact"] },
+      { key: "initiationDate", aliases: ["Initiation Date"] },
+      { key: "time", aliases: ["Time"] },
+      { key: "initiatedBy", aliases: ["Initiated by", "Initiated By"] },
+      { key: "visitDone", aliases: ["Visit Done"] },
+      { key: "visitDate", aliases: ["Visit Date"] },
+      { key: "reportSent", aliases: ["Report Sent"] },
+      { key: "status1", aliases: ["Status1"] },
+      { key: "status2", aliases: ["Status2"] },
+      { key: "status3", aliases: ["Status3"] },
+      { key: "status4", aliases: ["Status4"] },
+      { key: "visitDoneBy", aliases: ["Visit Done by", "Visit Done By"] },
+      { key: "followUpDate", aliases: ["Follow Up Date"] },
+      { key: "specialFee", aliases: ["Special Fee"] },
+      { key: "serviceLocation", aliases: ["Service Location"] },
+      { key: "branch1", aliases: ["Branch"] },
+      { key: "month", aliases: ["Month"] },
+      { key: "nameOfBankFi", aliases: ["Name of Bank/FI"] },
+      { key: "status", aliases: ["Status"] },
+      { key: "rate", aliases: ["Rate"] },
+      { key: "distance", aliases: ["Distance"] },
+      { key: "conveyance", aliases: ["Conveyance"] },
+      { key: "additionalFee", aliases: ["Aditional Fee", "Additional Fee"] },
+      { key: "total", aliases: ["Total"] },
+      { key: "billSent", aliases: ["Bill Sent"] },
+      { key: "amountReceived", aliases: ["Amount Received"] },
+      { key: "address1", aliases: ["Address"] },
+    ];
+
+    // Build the finalized mapping map (TargetKey -> Exact Header Name)
+    // This is the "Brain" of the extraction logic
+    const finalHeaderMap: Record<string, string> = {};
+    if (data.length > 0) {
+      const actualHeaders = Object.keys(data[0]);
+      targetFieldConfigs.forEach(target => {
+        // 1. Check user mapping first
+        const userProvided = userMapping[target.key];
+        if (userProvided && actualHeaders.includes(userProvided)) {
+           finalHeaderMap[target.key] = userProvided;
+           return;
+        }
+
+        // 2. Fuzzy match aliases (O(Aliases * Headers) - done only once)
+        for (const alias of target.aliases) {
+            if (actualHeaders.includes(alias)) {
+                finalHeaderMap[target.key] = alias;
+                break;
+            }
+            const found = actualHeaders.find(h => h.toLowerCase().trim() === alias.toLowerCase().trim());
+            if (found) {
+                finalHeaderMap[target.key] = found;
+                break;
+            }
+        }
+      });
+    }
+
+    // Process chunks with the optimized map
     for (let i = 0; i < data.length; i += chunkSize) {
       const chunk = data.slice(i, i + chunkSize);
       
       const recordsToInsert = chunk.map((row, index) => {
-        const getVal = (targetKey: string, aliases: string[]) => {
-          // Priority 1: User Mapping
-          const mappedHeader = userMapping[targetKey];
-          if (mappedHeader && row[mappedHeader] !== undefined) return row[mappedHeader];
-
-          // Priority 2: Fuzzy matching / Aliases
-          for (const alias of aliases) {
-            const exactMatch = row[alias];
-            if (exactMatch !== undefined && exactMatch !== null) return exactMatch;
-            
-            const foundKey = Object.keys(row).find(k => k.toLowerCase().trim() === alias.toLowerCase());
-            if (foundKey) return row[foundKey];
-          }
-          return "";
+        const getRaw = (key: string) => {
+           const actualHeader = finalHeaderMap[key];
+           return actualHeader ? row[actualHeader] : "";
         };
 
-        const applicantName = String(getVal("applicantName", ["Applicant Name", "Applicant"]) || "");
-        const eepacRefNo = String(getVal("eepacRefNo", ["EEPAC Reference No", "EEPAC Ref"]) || "");
+        const applicantName = String(getRaw("applicantName") || "");
+        const eepacRefNo = String(getRaw("eepacRefNo") || "");
         
-        // Skip records with no applicant and no ref no (Double validation for ghost rows)
+        // Skip empty rows
         if (!applicantName && !eepacRefNo) return null;
 
-        const initiationDate = formatExcelDate(getVal("initiationDate", ["Initiation Date"]));
-        const visitDate = formatExcelDate(getVal("visitDate", ["Visit Date"]));
-        const month = formatExcelDate(getVal("month", ["Month"]));
-        const followUpDate = formatExcelDate(getVal("followUpDate", ["Follow Up Date"]));
-
-        const reportSent = formatExcelDate(getVal("reportSent", ["Report Sent"]));
-
-        const rate = parseFloat(getVal("rate", ["Rate"]) || "0") || 0;
-        const conv = parseFloat(getVal("conveyance", ["Conveyance"]) || "0") || 0;
-        const addl = parseFloat(getVal("additionalFee", ["Aditional Fee", "Additional Fee"]) || "0") || 0;
-        const total = parseFloat(getVal("total", ["Total"]) || "0") || (rate + conv + addl);
+        const rate = parseFloat(getRaw("rate") || "0") || 0;
+        const conv = parseFloat(getRaw("conveyance") || "0") || 0;
+        const addl = parseFloat(getRaw("additionalFee") || "0") || 0;
 
         return {
           misFileId: misFile.id,
-          sNo: parseInt(getVal("sNo", ["S. No", "S No", "SNo"]) || "0") || null,
+          sNo: parseInt(getRaw("sNo") || "0") || null,
           eepacRefNo: eepacRefNo,
-          appRefNo: String(getVal("appRefNo", ["App Reference No.", "App Ref No", "App Ref"]) || ""),
-          bankRefNo: String(getVal("bankRefNo", ["Bank Reference No", "Bank Ref"]) || ""),
-          additionalBankRef: String(getVal("additionalBankRef", ["Additional Bank Reference Number", "Additional Bank Ref"]) || ""),
+          appRefNo: String(getRaw("appRefNo") || ""),
+          bankRefNo: String(getRaw("bankRefNo") || ""),
+          additionalBankRef: String(getRaw("additionalBankRef") || ""),
           applicantName: applicantName,
-          address: String(getVal("address", ["Address"]) || ""),
-          city: String(getVal("city", ["City"]) || ""),
-          state: String(getVal("state", ["State"]) || ""),
-          pinCode: String(getVal("pinCode", ["Pin Code", "Pincode"]) || ""),
-          caseType: String(getVal("caseType", ["Case Type"]) || ""),
-          bankName: String(getVal("bankName", ["Bank", "Name of Bank/FI", "Bank Name"]) || ""),
-          customerContact: String(getVal("customerContact", ["Customer Contact No", "Customer Contact"]) || ""),
-          branch: String(getVal("branch", ["Branch"]) || ""),
-          rmContact: String(getVal("rmContact", ["RM Contact Number", "RM Contact"]) || ""),
-          initiationDate: initiationDate,
-          time: String(getVal("time", ["Time"]) || ""),
-          initiatedBy: String(getVal("initiatedBy", ["Initiated by", "Initiated By"]) || ""),
-          visitDone: String(getVal("visitDone", ["Visit Done"]) || ""),
-          visitDate: visitDate,
-          reportSent: reportSent,
-          status1: String(getVal("status1", ["Status1"]) || ""),
-          status2: String(getVal("status2", ["Status2"]) || ""),
-          status3: String(getVal("status3", ["Status3"]) || ""),
-          status4: String(getVal("status4", ["Status4"]) || ""),
-          visitDoneBy: String(getVal("visitDoneBy", ["Visit Done by", "Visit Done By"]) || ""),
-          followUpDate: followUpDate,
-          specialFee: parseFloat(getVal("specialFee", ["Special Fee"]) || "0") || 0,
-          serviceLocation: String(getVal("serviceLocation", ["Service Location"]) || ""),
-          branch1: String(getVal("branch1", ["Branch"]) || ""),
-          month: month,
-          nameOfBankFi: String(getVal("nameOfBankFi", ["Name of Bank/FI"]) || ""),
-          status: String(getVal("status", ["Status"]) || ""),
+          address: String(getRaw("address") || ""),
+          city: String(getRaw("city") || ""),
+          state: String(getRaw("state") || ""),
+          pinCode: String(getRaw("pinCode") || ""),
+          caseType: String(getRaw("caseType") || ""),
+          bankName: String(getRaw("bankName") || ""),
+          customerContact: String(getRaw("customerContact") || ""),
+          branch: String(getRaw("branch") || ""),
+          rmContact: String(getRaw("rmContact") || ""),
+          initiationDate: formatExcelDate(getRaw("initiationDate")),
+          time: String(getRaw("time") || ""),
+          initiatedBy: String(getRaw("initiatedBy") || ""),
+          visitDone: String(getRaw("visitDone") || ""),
+          visitDate: formatExcelDate(getRaw("visitDate")),
+          reportSent: formatExcelDate(getRaw("reportSent")),
+          status1: String(getRaw("status1") || ""),
+          status2: String(getRaw("status2") || ""),
+          status3: String(getRaw("status3") || ""),
+          status4: String(getRaw("status4") || ""),
+          visitDoneBy: String(getRaw("visitDoneBy") || ""),
+          followUpDate: formatExcelDate(getRaw("followUpDate")),
+          specialFee: parseFloat(getRaw("specialFee") || "0") || 0,
+          serviceLocation: String(getRaw("serviceLocation") || ""),
+          branch1: String(getRaw("branch1") || ""),
+          month: formatExcelDate(getRaw("month")),
+          nameOfBankFi: String(getRaw("nameOfBankFi") || ""),
+          status: String(getRaw("status") || ""),
           rate: rate,
-          distance: parseFloat(getVal("distance", ["Distance"]) || "0") || 0,
+          distance: parseFloat(getRaw("distance") || "0") || 0,
           conveyance: conv,
           additionalFee: addl,
-          total: total,
-          billSent: String(getVal("billSent", ["Bill Sent"]) || ""),
-          amountReceived: parseFloat(getVal("amountReceived", ["Amount Received"]) || "0") || 0,
-          address1: String(getVal("address1", ["Address"]) || ""),
+          total: parseFloat(getRaw("total") || "0") || (rate + conv + addl),
+          billSent: String(getRaw("billSent") || ""),
+          amountReceived: parseFloat(getRaw("amountReceived") || "0") || 0,
+          address1: String(getRaw("address1") || ""),
           rowIndex: i + index,
         };
       }).filter(Boolean) as any[];

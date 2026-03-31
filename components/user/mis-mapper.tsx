@@ -50,8 +50,12 @@ export function MisMapper({ file, onMappingChange }: MisMapperProps) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const data = new Uint8Array(e.target?.result as ArrayBuffer);
-      const workbook = XLSX.read(data, { type: "array" });
+      // OPTIMIZATION: ONLY read the first 20 rows for mapping/preview purposes
+      // This prevents browser freeze on large files (e.g. 10MB+)
+      const workbook = XLSX.read(data, { type: "array", sheetRows: 20 });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      
+      // header: 1 returns array of arrays (first row is headers)
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
       
       if (rows.length > 0) {
@@ -69,7 +73,10 @@ export function MisMapper({ file, onMappingChange }: MisMapperProps) {
             if (match) newMapping[target.key] = match;
         });
         setMapping(newMapping);
-        setPreview(XLSX.utils.sheet_to_json(sheet).slice(0, 3));
+
+        // Preview uses the same limited sheet, which is now extremely fast
+        const previewData = XLSX.utils.sheet_to_json(sheet).slice(0, 3);
+        setPreview(previewData);
       }
     };
     reader.readAsArrayBuffer(file);
