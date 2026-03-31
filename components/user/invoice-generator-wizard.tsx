@@ -58,6 +58,7 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
     branch: "all",
     caseType: "all",
     status: "all",
+    state: "all",
     dateFrom: "",
     dateTo: "",
   });
@@ -78,6 +79,7 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
   const [recordCount, setRecordCount] = useState(0);
   const [availableBanks, setAvailableBanks] = useState<string[]>([]);
   const [availableBranches, setAvailableBranches] = useState<string[]>([]);
+  const [availableStates, setAvailableStates] = useState<string[]>([]);
 
   // Fetch record count and filter options when step 2 opens or filters change
   useEffect(() => {
@@ -88,6 +90,7 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
           const params = new URLSearchParams({
             bank: filters.bank,
             branch: filters.branch,
+            state: filters.state,
             dateFrom: filters.dateFrom,
             dateTo: filters.dateTo,
           });
@@ -102,6 +105,7 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
             const infoData = await infoRes.json();
             setAvailableBanks(infoData.banks || []);
             setAvailableBranches(infoData.branches || []);
+            setAvailableStates(infoData.states || []);
           }
         } catch (error) {
           console.error("Filter info load fail:", error);
@@ -120,6 +124,7 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
         pageSize: "10",
         bank: filters.bank,
         branch: filters.branch,
+        state: filters.state,
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
       });
@@ -286,6 +291,19 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                          <SelectContent>
                            <SelectItem value="all">All Branches</SelectItem>
                            {availableBranches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                         </SelectContent>
+                       </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                       <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">State Filter</Label>
+                       <Select defaultValue="all" onValueChange={(v) => handleFilterChange("state", v)}>
+                         <SelectTrigger className="h-11 bg-gray-50 border-none font-bold shadow-sm">
+                           <SelectValue placeholder="All States" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="all">All States</SelectItem>
+                           {availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                          </SelectContent>
                        </Select>
                     </div>

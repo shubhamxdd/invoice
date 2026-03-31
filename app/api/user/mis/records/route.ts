@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
   const branch = searchParams.get("branch") || "";
   const caseType = searchParams.get("caseType") || "";
   const status = searchParams.get("status") || "";
+  const state = searchParams.get("state") || "";
   const misFileId = searchParams.get("fileId") || "";
   const dateFrom = searchParams.get("dateFrom") || "";
   const dateTo = searchParams.get("dateTo") || "";
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest) {
   if (branch && branch !== "all") where.branch = branch;
   if (caseType && caseType !== "all") where.caseType = caseType;
   if (status && status !== "all") where.status = status;
+  if (state && state !== "all") where.state = state;
 
   if (dateFrom || dateTo) {
     where.initiationDate = {};

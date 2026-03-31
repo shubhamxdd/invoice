@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const [banks, branches, total] = await Promise.all([
+    const [banks, branches, states, total] = await Promise.all([
       prisma.misRecord.findMany({
         where: { misFile: { uploadedBy: session.user.id } },
         distinct: ["bankName"],
@@ -20,6 +20,12 @@ export async function GET(req: NextRequest) {
         select: { branch: true },
         orderBy: { branch: "asc" }
       }),
+      prisma.misRecord.findMany({
+        where: { misFile: { uploadedBy: session.user.id } },
+        distinct: ["state"],
+        select: { state: true },
+        orderBy: { state: "asc" }
+      }),
       prisma.misRecord.count({
         where: { misFile: { uploadedBy: session.user.id } }
       })
@@ -28,6 +34,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       banks: banks.map(b => b.bankName).filter(Boolean),
       branches: branches.map(b => b.branch).filter(Boolean),
+      states: states.map(s => s.state).filter(Boolean),
       total
     });
   } catch (error: any) {

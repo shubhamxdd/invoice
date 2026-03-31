@@ -8,7 +8,7 @@ export async function GET() {
 
   try {
     // Fetch unique values from the whole MisRecord table for this user
-    const [banks, branches, caseTypes, statuses] = await Promise.all([
+    const [banks, branches, caseTypes, statuses, states] = await Promise.all([
       prisma.misRecord.findMany({
         where: { misFile: { uploadedBy: session.user.id } },
         distinct: ['bankName'],
@@ -29,6 +29,11 @@ export async function GET() {
         distinct: ['status'],
         select: { status: true },
       }),
+      prisma.misRecord.findMany({
+        where: { misFile: { uploadedBy: session.user.id } },
+        distinct: ['state'],
+        select: { state: true },
+      }),
     ]);
 
     return NextResponse.json({
@@ -36,6 +41,7 @@ export async function GET() {
       branches: branches.map(b => b.branch).filter(Boolean).sort(),
       caseTypes: caseTypes.map(c => c.caseType).filter(Boolean).sort(),
       statuses: statuses.map(s => s.status).filter(Boolean).sort(),
+      states: states.map(s => s.state).filter(Boolean).sort(),
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

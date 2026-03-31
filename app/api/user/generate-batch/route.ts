@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
     if (filters.branch && filters.branch !== "all") where.branch = filters.branch;
     if (filters.caseType && filters.caseType !== "all") where.caseType = filters.caseType;
     if (filters.status && filters.status !== "all") where.status = filters.status;
+    if (filters.state && filters.state !== "all") where.state = filters.state;
     
     if (filters.dateFrom || filters.dateTo) {
       where.initiationDate = {};
