@@ -28,25 +28,33 @@ export default async function UserDashboard() {
   const session = await auth();
 
   // Fetch some stats for the dashboard
-  const [misFileCount, processedCount, invoiceCount, totalRevenue] = await Promise.all([
-    prisma.misFile.count({ where: { uploadedBy: session?.user?.id } }),
-    prisma.misFile.count({ where: { uploadedBy: session?.user?.id, status: "processed" } }),
-    prisma.invoiceBatch.count({ where: { generatedBy: session?.user?.id } }),
+  const userId = session?.user?.id;
+  const [misFileCount, processedCount, invoiceCount, totalRevenue, uniqueInvoices, totalReadyRecords] = await Promise.all([
+    prisma.misFile.count({ where: { uploadedBy: userId } }),
+    prisma.misFile.count({ where: { uploadedBy: userId, status: "processed" } }),
+    prisma.invoiceBatch.count({ where: { generatedBy: userId } }),
     prisma.invoiceBatch.aggregate({ 
-      where: { generatedBy: session?.user?.id },
+      where: { generatedBy: userId },
       _sum: { totalAmount: true } 
     }),
+    prisma.invoiceFile.count({
+      where: { batch: { generatedBy: userId } }
+    }),
+    prisma.misFile.aggregate({
+      where: { uploadedBy: userId, status: "processed" },
+      _sum: { recordCount: true }
+    })
   ]);
 
   // Fetch recent MIS files and invoices
   const [recentMisFiles, recentInvoices] = await Promise.all([
     prisma.misFile.findMany({
-      where: { uploadedBy: session?.user?.id },
+      where: { uploadedBy: userId },
       orderBy: { createdAt: "desc" },
       take: 3
     }),
     prisma.invoiceBatch.findMany({
-      where: { generatedBy: session?.user?.id },
+      where: { generatedBy: userId },
       orderBy: { createdAt: "desc" },
       take: 3,
       include: { company: true }
@@ -57,21 +65,28 @@ export default async function UserDashboard() {
     {
       name: "MIS Files",
       value: misFileCount.toString(),
-      sub: "Total uploaded files",
+      sub: "Total uploads",
       icon: FileText,
       color: "bg-blue-500/10 text-blue-600",
     },
     {
-      name: "Processed",
-      value: processedCount.toString(),
-      sub: "Ready for invoicing",
+      name: "Records Ready",
+      value: (totalReadyRecords._sum.recordCount || 0).toLocaleString(),
+      sub: `${processedCount} files processed`,
       icon: CheckCircle2,
       color: "bg-emerald-500/10 text-emerald-600",
     },
     {
-      name: "Total Invoices",
+       name: "Unique Invoices",
+       value: uniqueInvoices.toString(),
+       sub: "Total files generated",
+       icon: Layers,
+       color: "bg-indigo-500/10 text-indigo-600",
+    },
+    {
+      name: "Batch Reports",
       value: invoiceCount.toString(),
-      sub: "Generated invoices",
+      sub: "Generated batches",
       icon: FileBadge,
       color: "bg-orange-500/10 text-orange-600",
     },
@@ -98,7 +113,7 @@ export default async function UserDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {stats.map((stat) => (
           <Card key={stat.name} className="overflow-hidden border-none shadow-md ring-1 ring-gray-100 dark:ring-zinc-800 transition-all hover:shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
