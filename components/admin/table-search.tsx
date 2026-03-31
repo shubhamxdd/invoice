@@ -25,8 +25,10 @@ export function TableSearch({ placeholder, defaultValue = "" }: TableSearchProps
       const params = new URLSearchParams(searchParams);
       if (value) {
         params.set("q", value);
+        params.set("page", "1");
       } else {
         params.delete("q");
+        params.set("page", "1");
       }
 
       startTransition(() => {

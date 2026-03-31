@@ -20,9 +20,10 @@ import { CompanyActions } from "@/components/admin/company-actions";
 export default async function CompanyManagementPage({
   searchParams,
 }: {
-  searchParams: { q?: string };
+  searchParams: Promise<{ q?: string }>;
 }) {
-  const query = searchParams.q || "";
+  const resolvedParams = await searchParams;
+  const query = resolvedParams.q || "";
 
   const companies = await prisma.company.findMany({
     where: {

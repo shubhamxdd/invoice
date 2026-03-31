@@ -22,10 +22,11 @@ import { BankActions } from "@/components/admin/bank-actions";
 export default async function BanksPage({
   searchParams,
 }: {
-  searchParams: { q?: string; page?: string };
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
-  const query = searchParams.q || "";
-  const page = parseInt(searchParams.page || "1");
+  const resolvedParams = await searchParams;
+  const query = resolvedParams.q || "";
+  const page = parseInt(resolvedParams.page || "1");
   const pageSize = 10;
 
   const [banks, totalCount] = await Promise.all([
