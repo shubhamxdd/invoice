@@ -71,17 +71,16 @@ export async function POST(req: NextRequest) {
     for (const [key, groupRecords] of Object.entries(groups)) {
       const rawBankName = groupRecords[0].bankName || "Unknown";
       const bankName = rawBankName.trim();
-      const cityName = groupRecords[0].city || "Unknown";
+      const branchName = groupRecords[0].branch || "Default_Branch";
       
       const sanitizedBank = bankName.replace(/[^a-z0-9]/gi, '_');
-      const sanitizedBranch = (groupRecords[0].branch || "Default_Branch").replace(/[^a-z0-9]/gi, '_');
-      const sanitizedCity = cityName.replace(/[^a-z0-9]/gi, '_');
+      const sanitizedBranch = branchName.replace(/[^a-z0-9]/gi, '_');
       
-      const filenameBase = `Invoice_${sanitizedBank}_${sanitizedCity}_${timestamp}`;
+      // Filename: invoice_bankname_branch_date
+      const filenameBase = `Invoice_${sanitizedBank}_${sanitizedBranch}_${dateStr}`;
       
-      const folderPath = options.groupByBranch 
-        ? `${sanitizedBank}/${sanitizedBranch}`
-        : sanitizedBank;
+      // Folder: bankname/branch/
+      const folderPath = `${sanitizedBank}/${sanitizedBranch}`;
 
       // Smart Case-Insensitive Match
       console.log(`[DEBUG] Step 1 (Exact): Matching MIS Record: Bank="${groupRecords[0].bankName}", Branch="${groupRecords[0].branch}"`);
