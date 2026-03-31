@@ -71,18 +71,18 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
     styles: { fontSize: 7, cellPadding: 2 }
   });
 
-  console.log(bank);
-  console.log("_--------------------------------------------");
-  console.log(company);
+  // console.log(bank);
+  // console.log("_--------------------------------------------");
+  // console.log(company);
   // 5. Details of Recipient
   autoTable(doc, {
     startY: (doc as any).lastAutoTable.finalY + 5,
     head: [[{ content: "Details of Recipient", colSpan: 2 }]],
     body: [
-      ["Name & Address :", `${bankName} ${bank?.address || records[0]?.address || ""}`],
-      ["State along with the State Code :", `${bank?.state || records[0]?.state || "Delhi"} (${bank?.stateCode || records[0]?.stateCode || "-"})`],
-      ["GST No. :", bank?.gstNumber || records[0]?.gstNumber || records[0]?.["GST Number"] || records[0]?.["GST Registration"] || "-"],
-      ["PAN No. :", bank?.panNumber || records[0]?.panNumber || records[0]?.["PAN Number"] || records[0]?.["PAN Registration"] || "-"]
+      ["Name & Address :", `${bankName} ${bank?.address || ""}`],
+      ["State along with the State Code :", `${bank?.state || "-"} (${bank?.stateCode || "-"})`],
+      ["GST No. :", bank?.gstNumber || "-"],
+      ["PAN No. :", bank?.panNumber || "-"]
     ],
     theme: "grid",
     headStyles: { fillColor: [245, 245, 245], textColor: 0, fontSize: 8, fontStyle: "bold" },
