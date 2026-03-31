@@ -24,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 
 import { EditRecordDialog } from "./edit-record-dialog";
+import { ViewRecordDialog } from "./view-record-dialog";
 
 interface MisDataPreviewProps {
   userId?: string;
@@ -35,6 +36,7 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [viewingRecord, setViewingRecord] = useState<any>(null);
   const [filters, setFilters] = useState({
     bank: "",
     branch: "",
@@ -83,8 +85,16 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
         <EditRecordDialog 
           record={editingRecord}
           isOpen={!!editingRecord}
-          onOpenChange={(open) => !open && setEditingRecord(null)}
+          onOpenChange={(open: boolean) => !open && setEditingRecord(null)}
           onSuccess={fetchRecords}
+        />
+      )}
+
+      {viewingRecord && (
+        <ViewRecordDialog 
+          record={viewingRecord}
+          isOpen={!!viewingRecord}
+          onOpenChange={(open: boolean) => !open && setViewingRecord(null)}
         />
       )}
 
@@ -251,10 +261,15 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
                     <TableCell className="text-right px-6 font-black text-sm text-gray-900 dark:text-gray-50 underline decoration-indigo-300 decoration-2 underline-offset-4">
                       ₹{(record.total || 0).toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-right px-6 pr-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="sm" className="h-8 font-black text-[10px] tracking-widest uppercase hover:bg-primary hover:text-white transition-all shadow-sm border border-gray-100" onClick={() => setEditingRecord(record)}>
-                        CORRECT
-                      </Button>
+                    <TableCell className="text-right px-6 pr-8 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" className="h-8 font-black text-[10px] tracking-widest uppercase hover:bg-zinc-100 transition-all border border-gray-100" onClick={() => setViewingRecord(record)}>
+                          VIEW
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 font-black text-[10px] tracking-widest uppercase hover:bg-primary hover:text-white transition-all shadow-sm border border-gray-100" onClick={() => setEditingRecord(record)}>
+                          CORRECT
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
