@@ -18,6 +18,8 @@ interface Field {
   y: number;
   width?: number;
   height?: number;
+  dataType?: string;
+  type?: string;
 }
 
 interface AdminPdfMapperProps {

@@ -26,12 +26,14 @@ import { toast } from "sonner";
 import { EditRecordDialog } from "./edit-record-dialog";
 import { ViewRecordDialog } from "./view-record-dialog";
 
+import { MisRecord } from "@/types";
+
 interface MisDataPreviewProps {
   userId?: string;
 }
 
 export function MisDataPreview({ userId }: MisDataPreviewProps) {
-  const [records, setRecords] = useState<any[]>([]);
+  const [records, setRecords] = useState<MisRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -41,8 +43,8 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
     caseTypes: [],
     statuses: [],
   });
-  const [editingRecord, setEditingRecord] = useState<any>(null);
-  const [viewingRecord, setViewingRecord] = useState<any>(null);
+  const [editingRecord, setEditingRecord] = useState<MisRecord | null>(null);
+  const [viewingRecord, setViewingRecord] = useState<MisRecord | null>(null);
   const [filters, setFilters] = useState({
     bank: "",
     branch: "",

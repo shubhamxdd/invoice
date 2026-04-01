@@ -76,8 +76,8 @@ export function AddCompanyDialog() {
         bankName: "", branchName: "", accountNumber: "", ifscCode: "" 
       });
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to register company");
     } finally {
       setIsLoading(false);
     }

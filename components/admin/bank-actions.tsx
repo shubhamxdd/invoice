@@ -60,8 +60,8 @@ export function BankActions({ bank }: BankActionsProps) {
       toast.success("Bank profile updated successfully!");
       setIsEditOpen(false);
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Update failed");
     } finally {
       setIsLoading(false);
     }
@@ -80,8 +80,8 @@ export function BankActions({ bank }: BankActionsProps) {
       toast.success("Bank profile deleted successfully!");
       setIsDeleteOpen(false);
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Deletion failed");
     } finally {
       setIsLoading(false);
     }

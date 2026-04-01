@@ -102,8 +102,8 @@ export function AddBankDialog() {
         isActive: true,
       });
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to add bank");
     } finally {
       setIsLoading(false);
     }

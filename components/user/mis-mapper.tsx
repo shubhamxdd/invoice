@@ -44,7 +44,7 @@ const TARGET_FIELDS = [
 export function MisMapper({ file, onMappingChange }: MisMapperProps) {
   const [headers, setHeaders] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
-  const [preview, setPreview] = useState<any[]>([]);
+  const [preview, setPreview] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
     const reader = new FileReader();
@@ -56,7 +56,7 @@ export function MisMapper({ file, onMappingChange }: MisMapperProps) {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       
       // header: 1 returns array of arrays (first row is headers)
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown[][];
       
       if (rows.length > 0) {
         const fileHeaders = rows[0].map(h => String(h || ""));
@@ -75,7 +75,7 @@ export function MisMapper({ file, onMappingChange }: MisMapperProps) {
         setMapping(newMapping);
 
         // Preview uses the same limited sheet, which is now extremely fast
-        const previewData = XLSX.utils.sheet_to_json(sheet).slice(0, 3);
+        const previewData = XLSX.utils.sheet_to_json(sheet).slice(0, 3) as Record<string, unknown>[];
         setPreview(previewData);
       }
     };
@@ -162,7 +162,9 @@ export function MisMapper({ file, onMappingChange }: MisMapperProps) {
               {preview.map((row, i) => (
                 <div key={i} className="flex flex-wrap gap-2 text-[10px] font-mono text-zinc-300 border-b border-zinc-900 pb-2 last:border-0 italic opacity-80 hover:opacity-100 transition-opacity">
                    {Object.entries(mapping).slice(0, 4).map(([k, v]) => (
-                     <span key={k} className="bg-zinc-900 px-2 py-0.5 rounded uppercase"><span className="text-indigo-400 font-black">{k}:</span> {row[v] || 'N/A'}</span>
+                     <span key={k} className="bg-zinc-900 px-2 py-0.5 rounded uppercase">
+                        <span className="text-indigo-400 font-black">{k}:</span> {String(row[v] || 'N/A')}
+                     </span>
                    ))}
                    <span className="text-zinc-600">...</span>
                 </div>

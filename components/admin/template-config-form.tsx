@@ -16,18 +16,30 @@ interface TemplateConfigFormProps {
   template: BankTemplate;
 }
 
+interface TemplateField {
+  key: string;
+  label: string;
+  dataType?: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  page: number;
+  type?: string;
+}
+
 export function TemplateConfigForm({ template }: TemplateConfigFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const router = useRouter();
   
   const initialFields = template.extractedFields 
-    ? JSON.parse(template.extractedFields) as any[]
+    ? JSON.parse(template.extractedFields) as TemplateField[]
     : [
         { key: "invoice_no", label: "Invoice Number", dataType: "string", x: 0.1, y: 0.1, page: 1 },
         { key: "date", label: "Date", dataType: "date", x: 0.1, y: 0.2, page: 1 },
         { key: "total_amount", label: "Total Amount", dataType: "number", x: 0.1, y: 0.3, page: 1 },
-      ];
+      ] as TemplateField[];
 
   const [fields, setFields] = useState(initialFields);
 
@@ -50,10 +62,10 @@ export function TemplateConfigForm({ template }: TemplateConfigFormProps) {
     setFields(fields.filter((_, i) => i !== index));
   };
 
-  const updateField = (index: number, key: string, value: any) => {
+  const updateField = (index: number, key: keyof TemplateField, value: string | number) => {
     const newFields = [...fields];
     newFields[index] = { ...newFields[index], [key]: value };
-    setFields(newFields);
+    setFields(newFields as TemplateField[]);
   };
 
   const handleSave = async () => {
@@ -69,8 +81,8 @@ export function TemplateConfigForm({ template }: TemplateConfigFormProps) {
 
       toast.success("Extraction mapping synchronized with neural engine!");
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Save failed");
     } finally {
       setIsLoading(false);
     }

@@ -2,7 +2,6 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Upload, FileDown, AlertCircle, FileText, CheckCircle2, MoreVertical, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -20,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UploadMisZone } from "@/components/user/upload-mis-zone";
+import { cn } from "@/lib/utils";
 
 export default async function MisUploadPage() {
   const session = await auth();
@@ -178,8 +178,4 @@ export default async function MisUploadPage() {
       </Card>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(" ");
 }

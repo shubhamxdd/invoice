@@ -14,8 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
+import { MisRecord } from "@/types";
+
 interface EditRecordDialogProps {
-  record: any;
+  record: MisRecord;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
@@ -66,7 +68,7 @@ export function EditRecordDialog({ record, isOpen, onOpenChange, onSuccess }: Ed
     amountReceived: record.amountReceived || 0,
   });
 
-  const handleChange = (key: string, value: any) => {
+  const handleChange = (key: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 

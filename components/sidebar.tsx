@@ -24,9 +24,11 @@ import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+import { SessionUser } from "@/types";
+
 interface SidebarProps {
   role: "admin" | "user";
-  user: any;
+  user: SessionUser | null | undefined;
 }
 
 const adminLinks = [

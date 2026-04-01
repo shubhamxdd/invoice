@@ -1,8 +1,6 @@
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Building2, Plus, Search, RefreshCw, Trash2, Edit, Mail, Info, FileText } from "lucide-react";
+import { Building2, RefreshCw, Mail, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -16,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { AddCompanyDialog } from "@/components/admin/add-company-dialog";
 import { TableSearch } from "@/components/admin/table-search";
 import { CompanyActions } from "@/components/admin/company-actions";
+import { cn } from "@/lib/utils";
 
 export default async function CompanyManagementPage({
   searchParams,
@@ -171,8 +170,4 @@ export default async function CompanyManagementPage({
       )}
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(" ");
 }

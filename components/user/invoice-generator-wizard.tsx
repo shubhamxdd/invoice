@@ -45,8 +45,10 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
+import { Company, MisRecord } from "@/types";
+
 interface InvoiceGeneratorWizardProps {
-  companies: any[];
+  companies: Company[];
   userId?: string;
 }
 
@@ -72,7 +74,7 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [previewData, setPreviewData] = useState<MisRecord[]>([]);
   const [previewTotal, setPreviewTotal] = useState(0);
   const [previewPage, setPreviewPage] = useState(1);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -397,8 +399,6 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                                 <TableHead className="w-[120px]">Conv.</TableHead>
                                 <TableHead className="w-[120px]">Addl Fee</TableHead>
                                 <TableHead className="w-[120px]">Amt Recd</TableHead>
-                                <TableHead className="w-[150px]">GST Number</TableHead>
-                                <TableHead className="w-[150px]">PAN Number</TableHead>
                              </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -442,8 +442,6 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                                   <TableCell>₹{(record.conveyance || 0).toLocaleString()}</TableCell>
                                   <TableCell>₹{(record.additionalFee || 0).toLocaleString()}</TableCell>
                                   <TableCell>₹{(record.amountReceived || 0).toLocaleString()}</TableCell>
-                                  <TableCell className="font-mono">{record.gstNumber || "-"}</TableCell>
-                                  <TableCell className="font-mono">{record.panNumber || "-"}</TableCell>
                                </TableRow>
                              ))}
                              {previewData.length === 0 && (

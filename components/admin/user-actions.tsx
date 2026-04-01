@@ -24,8 +24,10 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
+import { User } from "@/types";
+
 interface UserActionsProps {
-  user: any;
+  user: User;
 }
 
 export function UserActions({ user }: UserActionsProps) {
@@ -60,8 +62,8 @@ export function UserActions({ user }: UserActionsProps) {
       toast.success("User identity updated successfully");
       setIsEditOpen(false);
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Update failed");
     } finally {
       setIsLoading(false);
     }
@@ -82,8 +84,8 @@ export function UserActions({ user }: UserActionsProps) {
       toast.success("User account purged from records");
       setIsDeleteOpen(false);
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Deletion failed");
     } finally {
       setIsLoading(false);
     }

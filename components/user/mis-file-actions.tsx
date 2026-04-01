@@ -23,8 +23,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
+import { MisFile, MisRecord } from "@/types";
+
 interface MisFileActionsProps {
-  file: any;
+  file: MisFile;
   variant?: "card" | "table";
 }
 
@@ -32,7 +34,7 @@ export function MisFileActions({ file, variant = "card" }: MisFileActionsProps) 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [previewRecords, setPreviewRecords] = useState<any[]>([]);
+  const [previewRecords, setPreviewRecords] = useState<MisRecord[]>([]);
   const router = useRouter();
 
   const fetchPreviewData = async () => {
