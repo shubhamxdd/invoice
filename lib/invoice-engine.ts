@@ -6,6 +6,28 @@ import fs from "fs/promises";
 import path from "path";
 
 /**
+ * High-Fidelity State Normalization Utility
+ * Standardizes common Indian state names and aliases for accurate GST calculation.
+ */
+const normalizeState = (s: any): string => {
+  if (!s) return "";
+  const lookup: Record<string, string> = {
+    "up": "uttar pradesh",
+    "u.p.": "uttar pradesh",
+    "uk": "uttarakhand",
+    "u.k.": "uttarakhand",
+    "hr": "haryana",
+    "pb": "punjab",
+    "dl": "delhi",
+    "rj": "rajasthan",
+    "mp": "madhya pradesh",
+    "hp": "himachal pradesh",
+  };
+  const cleaned = String(s).toLowerCase().trim();
+  return lookup[cleaned] || cleaned;
+};
+
+/**
  * Premium Master PDF Template Generator
  * Matches the structure of the provided reference image.
  */
@@ -14,10 +36,11 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
   const bank = options.bank;
   const bankName = bank?.bankName || records[0]?.bankName || "Standard FI";
   
-  // Tax determination logic
-  const companyState = (company.state || "Delhi").toLowerCase().trim();
-  const bankState = (bank?.state || records[0]?.state || "Delhi").toLowerCase().trim();
-  const isInterState = companyState !== bankState && companyState && bankState;
+  // Tax determination logic (Normalized for common aliases)
+  const companyState = normalizeState(company.state);
+  // Priority: Use state from MIS record, then from Bank DB record
+  const bankState = normalizeState(records[0]?.state || bank?.state);
+  const isInterState = companyState !== bankState && companyState !== "" && bankState !== "";
   
   const cgstRate = isInterState ? 0 : 0.09;
   const sgstRate = isInterState ? 0 : 0.09;
@@ -280,10 +303,14 @@ export async function generateTrainedPdfInvoice(records: any[], company: any, bl
     // 2. Load the Spatial Blueprint
     const blueprint = typeof blueprintRaw === "string" ? JSON.parse(blueprintRaw) : blueprintRaw;
     const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    
+    // Dynamic data calculations (Normalized Tax Logic)
+    const companyState = normalizeState(company.state);
+    const bankState = normalizeState(records[0]?.state || options.bank?.state);
+    const isInterState = companyState !== bankState && companyState !== "" && bankState !== "";
+    const taxRate = 0.18; // Combined GST
 
-    // Dynamic data calculations
     const subTotal = records.reduce((sum, r) => sum + (r.rate * 1 || 0), 0);
-    const taxRate = 0.18; 
     const grandTotal = subTotal * (1 + taxRate);
 
     // 3. System Variable -> MIS Data Mapping
@@ -339,10 +366,11 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
   const invoiceMonth = records[0]?.month || `${monthNames[new Date().getMonth()]} ${new Date().getFullYear()}`;
   const invoiceSerial = records[0]?.invoiceNo || `EEPAC/${new Date().getFullYear().toString().slice(-2)}-${(new Date().getFullYear()+1).toString().slice(-2)}/${Math.floor(1000 + Math.random() * 9000)}`;
 
-  // Tax constants
-  const companyState = (company.state || "Delhi").toLowerCase().trim();
-  const bankState = (bank?.state || records[0]?.state || "Delhi").toLowerCase().trim();
-  const isInterState = companyState !== bankState && companyState && bankState;
+  // Tax constants (Normalized)
+  const companyState = normalizeState(company.state);
+  // Priority: Use state from MIS record, then from Bank DB record
+  const bankState = normalizeState(records[0]?.state || bank?.state);
+  const isInterState = companyState !== bankState && companyState !== "" && bankState !== "";
   const cgstRate = isInterState ? 0 : 0.09;
   const sgstRate = isInterState ? 0 : 0.09;
   const igstRate = isInterState ? 0.18 : 0;
@@ -371,7 +399,7 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
 
   // 2. Billing Title (Row 6)
   const billingRow = sheet1.getRow(6);
-  billingRow.getCell(1).value = company.name?.toUpperCase() || "EEPAC (INDIA) PRIVATE LIMITED";
+  billingRow.getCell(1).value = company.name?.toUpperCase();
   billingRow.getCell(1).font = { bold: true, size: 10 };
   
   const serialText = `Serial No of Invoice : ${invoiceSerial}`;
