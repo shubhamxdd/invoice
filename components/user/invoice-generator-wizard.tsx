@@ -44,6 +44,8 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { EditRecordDialog } from "./edit-record-dialog";
+import { ViewRecordDialog } from "./view-record-dialog";
 
 import { Company, MisRecord } from "@/types";
 
@@ -82,6 +84,8 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
   const [availableBanks, setAvailableBanks] = useState<string[]>([]);
   const [availableBranches, setAvailableBranches] = useState<string[]>([]);
   const [availableStates, setAvailableStates] = useState<string[]>([]);
+  const [editingRecord, setEditingRecord] = useState<MisRecord | null>(null);
+  const [viewingRecord, setViewingRecord] = useState<MisRecord | null>(null);
 
   // Fetch record count and filter options when step 2 opens or filters change
   useEffect(() => {
@@ -368,6 +372,26 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                       </DialogDescription>
                     </DialogHeader>
 
+                    {editingRecord && (
+                      <EditRecordDialog 
+                        record={editingRecord}
+                        isOpen={!!editingRecord}
+                        onOpenChange={(open: boolean) => !open && setEditingRecord(null)}
+                        onSuccess={() => {
+                          fetchPreviewData(previewPage);
+                          // Also refresh counts if needed
+                        }}
+                      />
+                    )}
+
+                    {viewingRecord && (
+                      <ViewRecordDialog 
+                        record={viewingRecord}
+                        isOpen={!!viewingRecord}
+                        onOpenChange={(open: boolean) => !open && setViewingRecord(null)}
+                      />
+                    )}
+
                     <div className="p-0 overflow-x-auto overflow-y-auto max-h-[60vh]">
                        <Table className="min-w-[5000px] border-separate border-spacing-0">
                           <TableHeader className="bg-gray-50/80 sticky top-0 z-20">
@@ -399,6 +423,7 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                                 <TableHead className="w-[120px]">Conv.</TableHead>
                                 <TableHead className="w-[120px]">Addl Fee</TableHead>
                                 <TableHead className="w-[120px]">Amt Recd</TableHead>
+                                <TableHead className="w-[150px] sticky right-0 bg-gray-50 z-30 text-right pr-8">Actions</TableHead>
                              </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -442,6 +467,12 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                                   <TableCell>₹{(record.conveyance || 0).toLocaleString()}</TableCell>
                                   <TableCell>₹{(record.additionalFee || 0).toLocaleString()}</TableCell>
                                   <TableCell>₹{(record.amountReceived || 0).toLocaleString()}</TableCell>
+                                  <TableCell className="sticky right-0 bg-white group-hover:bg-primary/[0.01] z-10 text-right pr-8">
+                                     <div className="flex justify-end gap-1.5">
+                                        <Button variant="outline" size="sm" className="h-7 px-2 font-black text-[9px] uppercase tracking-tighter" onClick={() => setViewingRecord(record)}>VIEW</Button>
+                                        <Button variant="default" size="sm" className="h-7 px-2 font-black text-[9px] uppercase tracking-tighter" onClick={() => setEditingRecord(record)}>EDIT</Button>
+                                     </div>
+                                  </TableCell>
                                </TableRow>
                              ))}
                              {previewData.length === 0 && (

@@ -11,11 +11,10 @@ function formatExcelDate(value: any): string {
     try {
       // Excel dates are days since 1900-01-01
       const date = new Date((value - 25569) * 86400 * 1000);
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
       const day = date.getDate().toString().padStart(2, "0");
-      const month = months[date.getMonth()];
-      const year = date.getFullYear().toString().slice(-2);
-      return `${day}-${month}-${year}`;
+      return `${year}-${month}-${day}`;
     } catch (e) {
       return String(value);
     }

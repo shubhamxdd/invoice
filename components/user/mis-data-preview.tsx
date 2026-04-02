@@ -52,6 +52,8 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
     status: "",
     q: "",
     searchColumn: "all",
+    dateFrom: "",
+    dateTo: "",
   });
 
   const fetchRecords = async () => {
@@ -137,11 +139,11 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
                   />
                </div>
                
-               {(filters.q || filters.bank || filters.branch || filters.caseType || filters.status) && (
+               {(filters.q || filters.bank || filters.branch || filters.caseType || filters.status || filters.dateFrom || filters.dateTo) && (
                  <Button 
                    variant="ghost" 
                    size="sm" 
-                   onClick={() => setFilters({bank: "", branch: "", caseType: "", status: "", q: "", searchColumn: "all"})}
+                   onClick={() => setFilters({bank: "", branch: "", caseType: "", status: "", q: "", searchColumn: "all", dateFrom: "", dateTo: ""})}
                    className="h-11 px-4 text-xs font-black uppercase tracking-widest text-destructive hover:bg-destructive/5 border-2 border-dashed border-destructive/20 rounded-xl"
                  >
                    Clear Filters
@@ -195,14 +197,33 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
              </Select>
           </div>
 
-          {/* Right Side: Data Filters Box */}
-          <div className="md:col-span-5 h-full min-h-[105px] border-2 border-primary/20 rounded-xl flex items-center justify-center bg-primary/5 group transition-colors hover:bg-primary/10">
-              <div className="flex flex-col items-center gap-1">
+          {/* Right Side: Date Filters Box */}
+          <div className="md:col-span-5 h-full border-2 border-primary/20 rounded-xl bg-primary/5 p-4">
+              <div className="flex flex-col gap-3">
                  <div className="flex items-center gap-2">
-                    <Filter className="h-5 w-5 text-primary animate-pulse" />
-                    <span className="text-sm font-black uppercase tracking-widest text-primary">Data Filters</span>
+                    <Filter className="h-4 w-4 text-primary" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Range Discovery</span>
                  </div>
-                 <p className="text-[10px] text-primary/60 font-bold uppercase tracking-tight">Active Matrix Applied</p>
+                 <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-primary/60 uppercase ml-1">Initiated From</label>
+                      <Input 
+                        type="date" 
+                        value={filters.dateFrom}
+                        onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
+                        className="h-9 bg-white border-primary/20 focus-visible:ring-primary text-[11px] font-bold"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-primary/60 uppercase ml-1">Initiated To</label>
+                      <Input 
+                        type="date" 
+                        value={filters.dateTo}
+                        onChange={(e) => handleFilterChange("dateTo", e.target.value)}
+                        className="h-9 bg-white border-primary/20 focus-visible:ring-primary text-[11px] font-bold"
+                      />
+                    </div>
+                 </div>
               </div>
           </div>
         </div>

@@ -138,14 +138,14 @@ export function EditRecordDialog({ record, isOpen, onOpenChange, onSuccess }: Ed
     {
       title: "Dates & Workflow",
       fields: [
-        { label: "Initiation Date", key: "initiationDate" },
+        { label: "Initiation Date", key: "initiationDate", type: "date" },
         { label: "Time", key: "time" },
         { label: "Initiated By", key: "initiatedBy" },
         { label: "Visit Done", key: "visitDone" },
-        { label: "Visit Date", key: "visitDate" },
+        { label: "Visit Date", key: "visitDate", type: "date" },
         { label: "Visit Done By", key: "visitDoneBy" },
-        { label: "Report Sent", key: "reportSent" },
-        { label: "Follow Up Date", key: "followUpDate" },
+        { label: "Report Sent", key: "reportSent", type: "date" },
+        { label: "Follow Up Date", key: "followUpDate", type: "date" },
       ]
     },
     {
