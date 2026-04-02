@@ -70,7 +70,7 @@ export function Sidebar({ role, user }: SidebarProps) {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
                 K
               </div>
-              <span className="text-xl">KEC Invoice</span>
+              <span className="text-xl">Finoto Invoice</span>
             </div>
           )}
           {isCollapsed && (
