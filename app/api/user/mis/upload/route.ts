@@ -163,8 +163,13 @@ export async function POST(req: NextRequest) {
            return colIdx !== undefined ? row[colIdx] : "";
         };
 
-        const applicantName = String(getRaw("applicantName") || "");
-        const eepacRefNo = String(getRaw("eepacRefNo") || "");
+        const getNorm = (key: string) => {
+           const val = getRaw(key);
+           return val === null || val === undefined ? "" : String(val).trim().toUpperCase();
+        };
+
+        const applicantName = getNorm("applicantName");
+        const eepacRefNo = String(getRaw("eepacRefNo") || "").trim();
         
         if (!applicantName && !eepacRefNo) return null;
 
@@ -176,43 +181,43 @@ export async function POST(req: NextRequest) {
           misFileId: misFile.id,
           sNo: parseInt(getRaw("sNo") || "0") || null,
           eepacRefNo: eepacRefNo,
-          appRefNo: String(getRaw("appRefNo") || ""),
-          bankRefNo: String(getRaw("bankRefNo") || ""),
-          additionalBankRef: String(getRaw("additionalBankRef") || ""),
+          appRefNo: String(getRaw("appRefNo") || "").trim(),
+          bankRefNo: String(getRaw("bankRefNo") || "").trim(),
+          additionalBankRef: String(getRaw("additionalBankRef") || "").trim(),
           applicantName: applicantName,
           address: String(getRaw("address") || ""),
-          city: String(getRaw("city") || ""),
-          state: String(getRaw("state") || ""),
-          pinCode: String(getRaw("pinCode") || ""),
-          caseType: String(getRaw("caseType") || ""),
-          bankName: String(getRaw("bankName") || ""),
-          customerContact: String(getRaw("customerContact") || ""),
-          branch: String(getRaw("branch") || ""),
-          rmContact: String(getRaw("rmContact") || ""),
+          city: getNorm("city"),
+          state: getNorm("state"),
+          pinCode: String(getRaw("pinCode") || "").trim(),
+          caseType: getNorm("caseType"),
+          bankName: getNorm("bankName"),
+          customerContact: String(getRaw("customerContact") || "").trim(),
+          branch: getNorm("branch"),
+          rmContact: String(getRaw("rmContact") || "").trim(),
           initiationDate: formatExcelDate(getRaw("initiationDate")),
-          time: String(getRaw("time") || ""),
-          initiatedBy: String(getRaw("initiatedBy") || ""),
-          visitDone: String(getRaw("visitDone") || ""),
+          time: String(getRaw("time") || "").trim(),
+          initiatedBy: getNorm("initiatedBy"),
+          visitDone: getNorm("visitDone"),
           visitDate: formatExcelDate(getRaw("visitDate")),
           reportSent: formatExcelDate(getRaw("reportSent")),
-          status1: String(getRaw("status1") || ""),
-          status2: String(getRaw("status2") || ""),
-          status3: String(getRaw("status3") || ""),
-          status4: String(getRaw("status4") || ""),
-          visitDoneBy: String(getRaw("visitDoneBy") || ""),
+          status1: getNorm("status1"),
+          status2: getNorm("status2"),
+          status3: getNorm("status3"),
+          status4: getNorm("status4"),
+          visitDoneBy: getNorm("visitDoneBy"),
           followUpDate: formatExcelDate(getRaw("followUpDate")),
           specialFee: parseFloat(getRaw("specialFee") || "0") || 0,
-          serviceLocation: String(getRaw("serviceLocation") || ""),
-          branch1: String(getRaw("branch1") || ""),
+          serviceLocation: getNorm("serviceLocation"),
+          branch1: getNorm("branch1"),
           month: formatExcelDate(getRaw("month")),
-          nameOfBankFi: String(getRaw("nameOfBankFi") || ""),
-          status: String(getRaw("status") || ""),
+          nameOfBankFi: getNorm("nameOfBankFi"),
+          status: getNorm("status"),
           rate: rate,
           distance: parseFloat(getRaw("distance") || "0") || 0,
           conveyance: conv,
           additionalFee: addl,
           total: parseFloat(getRaw("total") || "0") || (rate + conv + addl),
-          billSent: String(getRaw("billSent") || ""),
+          billSent: String(getRaw("billSent") || "").trim(),
           amountReceived: parseFloat(getRaw("amountReceived") || "0") || 0,
           address1: String(getRaw("address1") || ""),
           rowIndex: i + index,

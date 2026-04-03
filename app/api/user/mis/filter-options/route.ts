@@ -47,12 +47,18 @@ export async function GET(req: Request) {
       }),
     ]);
 
+    // DEDUPLICATION & NORMALIZATION ENGINE
+    // We trim and uppercase everything to ensure "NOIDA" and "NOIDA " are treated as one
+    const normalize = (arr: any[], key: string) => Array.from(new Set(
+      arr.map(item => String(item[key] || "").trim().toUpperCase()).filter(Boolean)
+    )).sort();
+
     return NextResponse.json({
-      banks: banks.map(b => b.bankName).filter(Boolean).sort(),
-      branches: branches.map(b => b.branch).filter(Boolean).sort(),
-      caseTypes: caseTypes.map(c => c.caseType).filter(Boolean).sort(),
-      statuses: statuses.map(s => s.status).filter(Boolean).sort(),
-      states: states.map(s => s.state).filter(Boolean).sort(),
+      banks: normalize(banks, 'bankName'),
+      branches: normalize(branches, 'branch'),
+      caseTypes: normalize(caseTypes, 'caseType'),
+      statuses: normalize(statuses, 'status'),
+      states: normalize(states, 'state'),
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
