@@ -26,9 +26,9 @@ interface EditRecordDialogProps {
 export function EditRecordDialog({ record, isOpen, onOpenChange, onSuccess }: EditRecordDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    sNo: record.sNo || "",
-    eepacRefNo: record.eepacRefNo || "",
-    appRefNo: record.appRefNo || "",
+    sNo: record?.sNo || "",
+    eepacRefNo: record?.eepacRefNo || "",
+    appRefNo: record?.appRefNo || "",
     bankRefNo: record.bankRefNo || "",
     additionalBankRef: record.additionalBankRef || "",
     applicantName: record.applicantName || "",
@@ -179,7 +179,7 @@ export function EditRecordDialog({ record, isOpen, onOpenChange, onSuccess }: Ed
       <DialogContent className="sm:max-w-[1000px] p-0 border-none shadow-2xl rounded-[2rem] overflow-hidden flex flex-col max-h-[90vh]">
         <DialogHeader className="p-8 bg-zinc-900 text-white flex-shrink-0">
           <DialogTitle className="text-3xl font-black italic tracking-tighter">DATA CORRECTION</DialogTitle>
-          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mt-2">Update all identified fields for {record.eepacRefNo}</p>
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mt-2">Update all identified fields for {record?.eepacRefNo}</p>
         </DialogHeader>
 
         <div className="p-8 space-y-10 overflow-y-auto flex-grow bg-white dark:bg-zinc-950">
