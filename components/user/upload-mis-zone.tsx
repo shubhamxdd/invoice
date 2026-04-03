@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Upload, FileText, CheckCircle2, AlertCircle, X, Loader2, Download, Table as TableIcon, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +33,23 @@ export function UploadMisZone() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  // Smooth pseudo-progress engine for real-time feedback
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isUploading) {
+      setUploadProgress(5);
+      interval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 98) return 98;
+          // Exponentially slow down progress as it nears 100%
+          const increment = prev < 30 ? 5 : prev < 70 ? 2 : prev < 90 ? 0.5 : 0.1;
+          return Math.min(prev + increment, 98.5);
+        });
+      }, 300);
+    }
+    return () => clearInterval(interval);
+  }, [isUploading]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
@@ -57,7 +74,6 @@ export function UploadMisZone() {
     }
 
     setIsUploading(true);
-    setUploadProgress(15);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -66,28 +82,29 @@ export function UploadMisZone() {
     formData.append("mapping", JSON.stringify(mapping));
 
     try {
-      setUploadProgress(40);
       const response = await fetch("/api/user/mis/upload", {
         method: "POST",
         body: formData,
       });
 
-      setUploadProgress(80);
       if (!response.ok) throw new Error("Upload failed");
 
       const data = await response.json();
       setUploadProgress(100);
-      toast.success(`Neural engine synchronized ${data.recordCount} records!`);
-      setIsModalOpen(false);
-      resetState();
-      router.refresh();
+      
+      // Delay success toast and modal close to let user see 100%
+      setTimeout(() => {
+        toast.success(`Neural engine synchronized ${data.recordCount} records!`);
+        setIsModalOpen(false);
+        resetState();
+        router.refresh();
+      }, 800);
       
     } catch (error) {
       toast.error("Failed to sync neural database. Please retry.");
       setIsUploading(false);
-    } finally {
-      setIsUploading(false);
-    }
+      setUploadProgress(0);
+    } 
   };
 
   const resetState = () => {
@@ -139,7 +156,7 @@ export function UploadMisZone() {
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={(v) => { if(!isUploading) { setIsModalOpen(v); if(!v) resetState(); } }}>
-        <DialogContent className="sm:max-w-4xl border-none shadow-2xl p-0 overflow-hidden rounded-[2.5rem] bg-white">
+        <DialogContent className="sm:max-w-4xl border-none shadow-2xl p-0 overflow-hidden rounded-[2.5rem] bg-white text-zinc-900">
           {isUploading ? (
             <div className="flex flex-col items-center justify-center p-20 min-h-[400px] space-y-8 animate-in fade-in zoom-in-95 duration-500 bg-white">
                <div className="relative">
@@ -157,7 +174,7 @@ export function UploadMisZone() {
                <div className="w-full max-w-md space-y-4">
                  <div className="flex justify-between text-[11px] font-black italic tracking-widest text-indigo-600 uppercase">
                    <span>Mapping Matrix...</span>
-                   <span>{uploadProgress}%</span>
+                   <span>{Math.round(uploadProgress)}%</span>
                  </div>
                  <Progress value={uploadProgress} className="h-3 bg-gray-100 shadow-inner rounded-full overflow-hidden" />
                </div>
@@ -177,11 +194,6 @@ export function UploadMisZone() {
                         Aligning external ledger headers with high-fidelity system anchors
                       </DialogDescription>
                     </div>
-                    {file && (
-                        <Badge variant="outline" className="border-emerald-500/20 bg-emerald-500/5 text-emerald-400 font-black italic text-[10px] tracking-widest h-6 px-3">
-                          FILE IDENTIFIED
-                        </Badge>
-                    )}
                 </div>
               </DialogHeader>
 
@@ -242,4 +254,3 @@ export function UploadMisZone() {
     </>
   );
 }
-
