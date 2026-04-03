@@ -113,6 +113,7 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [editingRecord, setEditingRecord] = useState<MisRecord | null>(null);
   const [viewingRecord, setViewingRecord] = useState<MisRecord | null>(null);
+  const [goToPage, setGoToPage] = useState("");
 
   // Fetch record count and filter options when step 2 opens or filters change
   useEffect(() => {
@@ -514,9 +515,37 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                     </div>
 
                     <DialogFooter className="p-6 bg-gray-50/50 border-t flex items-center justify-between">
-                       <div className="flex items-center gap-1 text-[11px] font-black text-gray-400 uppercase tracking-widest">
-                          Page <span className="text-primary">{previewPage}</span> of {Math.max(1, Math.ceil(previewTotal / 10))}
+                       <div className="flex items-center gap-6">
+                          <div className="flex items-center gap-1 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                             Page <span className="text-primary">{previewPage}</span> of {Math.max(1, Math.ceil(previewTotal / 10))}
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                             <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-tighter">Jump to:</Label>
+                             <div className="relative">
+                                <Input 
+                                  className="h-8 w-16 text-center text-xs font-bold rounded-lg border-gray-200 bg-white"
+                                  placeholder="Page"
+                                  type="number"
+                                  value={goToPage}
+                                  onChange={(e) => setGoToPage(e.target.value)}
+                                  onKeyDown={(e) => {
+                                     if (e.key === 'Enter') {
+                                        const p = parseInt(goToPage);
+                                        const totalP = Math.ceil(previewTotal / 10);
+                                        if (!isNaN(p) && p > 0 && p <= totalP) {
+                                           fetchPreviewData(p);
+                                           setGoToPage("");
+                                        } else {
+                                           toast.error(`Invalid page. Max pages: ${totalP}`);
+                                        }
+                                     }
+                                  }}
+                                />
+                             </div>
+                          </div>
                        </div>
+                       
                        <div className="flex gap-2">
                           <Button 
                             variant="outline" 
