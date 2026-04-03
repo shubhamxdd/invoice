@@ -17,7 +17,8 @@ import {
   Table as TableIcon,
   Search,
   Check,
-  Info
+  Info,
+  ListFilter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -44,6 +45,14 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { 
+  DropdownMenu, 
+  DropdownMenuCheckboxItem, 
+  DropdownMenuContent, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 import { EditRecordDialog } from "./edit-record-dialog";
 import { ViewRecordDialog } from "./view-record-dialog";
 
@@ -53,6 +62,23 @@ interface InvoiceGeneratorWizardProps {
   companies: Company[];
   userId?: string;
 }
+
+const ANNEXURE_FIELD_OPTIONS = [
+  { label: "Date of Visit", value: "visitDate" },
+  { label: "Case Type", value: "caseType" },
+  { label: "Branch Name", value: "branch" },
+  { label: "Address", value: "address" },
+  { label: "Initiated By", value: "initiatedBy" },
+  { label: "Deal No (Ref No)", value: "eepacRefNo" },
+  { label: "Customer Name", value: "applicantName" },
+  { label: "Date of Initiation", value: "initiationDate" },
+  { label: "Month", value: "month" },
+  { label: "Charges (Rate)", value: "rate" },
+  { label: "App Ref No", value: "appRefNo" },
+  { label: "City", value: "city" },
+  { label: "State", value: "state" },
+  { label: "Status", value: "status" },
+];
 
 export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWizardProps) {
   const [step, setStep] = useState(1);
@@ -72,6 +98,7 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
     groupByBank: true,
     groupByBranch: false,
     customInvoiceName: "invoice",
+    annexureFields: ["visitDate", "caseType", "branch", "address", "initiatedBy", "eepacRefNo", "applicantName", "initiationDate", "month", "rate"],
   });
   
   const [isProcessing, setIsProcessing] = useState(false);
@@ -574,6 +601,47 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                             checked={options.groupByBranch}
                             onCheckedChange={(v) => setOptions({...options, groupByBranch: v})}
                           />
+                       </div>
+
+                       <div className="space-y-2 pt-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Annexure Fields (Section 2)</Label>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" className="w-full h-11 justify-between bg-gray-50 border-none font-bold text-xs">
+                                <span className="truncate">
+                                  {options.annexureFields.length} Fields Selected
+                                </span>
+                                <ListFilter className="h-4 w-4 ml-2 opacity-50" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-[280px] max-h-[300px] overflow-y-auto rounded-xl">
+                              <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest">Select Fields to Include</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              {ANNEXURE_FIELD_OPTIONS.map((field) => (
+                                <DropdownMenuCheckboxItem
+                                  key={field.value}
+                                  checked={options.annexureFields.includes(field.value)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setOptions(prev => ({
+                                        ...prev,
+                                        annexureFields: [...prev.annexureFields, field.value]
+                                      }));
+                                    } else {
+                                      setOptions(prev => ({
+                                        ...prev,
+                                        annexureFields: prev.annexureFields.filter(f => f !== field.value)
+                                      }));
+                                    }
+                                  }}
+                                  className="text-xs font-bold"
+                                >
+                                  {field.label}
+                                </DropdownMenuCheckboxItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <p className="text-[9px] text-muted-foreground font-semibold italic">These fields will appear in the detailed record table.</p>
                        </div>
                     </div>
                  </CardContent>

@@ -7,9 +7,10 @@ import fs from "fs/promises";
 
 // Helper to convert Excel serial date to string
 function formatExcelDate(value: any): string {
+  if (value === null || value === undefined || value === "") return "";
+  
   if (typeof value === "number" && value > 40000) {
     try {
-      // Excel dates are days since 1900-01-01
       const date = new Date((value - 25569) * 86400 * 1000);
       const year = date.getFullYear();
       const month = (date.getMonth() + 1).toString().padStart(2, "0");
@@ -19,7 +20,31 @@ function formatExcelDate(value: any): string {
       return String(value);
     }
   }
-  return String(value || "");
+
+  // Handle strings like "16.03.2026", "16-03-2026", "16/03/2026"
+  const strVal = String(value).trim();
+  const dateParts = strVal.split(/[.\-/]/);
+  if (dateParts.length === 3) {
+    let day, month, year;
+    // Check for DD.MM.YYYY
+    if (dateParts[2].length === 4) {
+      day = dateParts[0].padStart(2, "0");
+      month = dateParts[1].padStart(2, "0");
+      year = dateParts[2];
+    } 
+    // Check for YYYY.MM.DD
+    else if (dateParts[0].length === 4) {
+      year = dateParts[0];
+      month = dateParts[1].padStart(2, "0");
+      day = dateParts[2].padStart(2, "0");
+    }
+
+    if (day && month && year) {
+      return `${year}-${month}-${day}`;
+    }
+  }
+
+  return strVal;
 }
 
 export async function POST(req: NextRequest) {

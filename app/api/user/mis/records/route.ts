@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
 
   allowedFields.forEach(field => {
     const val = searchParams.get(field);
-    if (val) {
+    if (val && val !== "all") {
       if (!where[field]) { // Don't override global search if it already set something
           where[field] = { contains: val };
       }
