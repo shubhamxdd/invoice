@@ -144,22 +144,57 @@ const TableContent = memo(({ isLoading, records, page, onView, onEdit }: {
 });
 TableContent.displayName = "TableContent";
 
-const CategoricalDrop = memo(({ type, options, label, value, onChange }: any) => (
-    <Select value={value || "all"} onValueChange={(v) => onChange(type, v === "all" ? "" : v)}>
-        <SelectTrigger className="h-11 bg-gray-50/50 dark:bg-zinc-900 border-gray-200 font-bold uppercase text-[10px] tracking-wider rounded-xl truncate">
-            <div className="flex items-center gap-2 truncate opacity-80">
-                <span className="text-[8px] font-black text-primary/40">{label}:</span>
-                <SelectValue placeholder={`Select ${label}`} />
-            </div>
-        </SelectTrigger>
-        <SelectContent className="rounded-xl max-h-[400px]">
-            <SelectItem value="all">All {label}s</SelectItem>
-            {options?.map((opt: string) => (
-                <SelectItem key={opt} value={opt} className="text-xs font-semibold">{opt}</SelectItem>
-            ))}
-        </SelectContent>
-    </Select>
-));
+const CategoricalDrop = memo(({ type, options, label, value, onChange }: any) => {
+    const [searchTerm, setSearchTerm] = useState("");
+    
+    const filteredOptions = useMemo(() => {
+        if (!searchTerm) return options;
+        return options?.filter((opt: string) => 
+            opt.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [options, searchTerm]);
+
+    return (
+        <Select 
+            value={value || "all"} 
+            onValueChange={(v) => onChange(type, v === "all" ? "" : v)}
+            onOpenChange={(open) => !open && setSearchTerm("")}
+        >
+            <SelectTrigger className="h-11 bg-gray-50/50 dark:bg-zinc-900 border-gray-200 font-bold uppercase text-[10px] tracking-wider rounded-xl truncate">
+                <div className="flex items-center gap-2 truncate opacity-80">
+                    <span className="text-[8px] font-black text-primary/40">{label}:</span>
+                    <SelectValue placeholder={`Select ${label}`} />
+                </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl max-h-[450px] p-0">
+                {(type === 'bank' || type === 'branch') && (
+                    <div className="sticky top-0 p-2 bg-white dark:bg-zinc-950 border-b border-gray-100 z-50">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-primary/50" />
+                            <Input 
+                                placeholder={`Search ${label}s...`}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyDown={(e) => e.stopPropagation()}
+                                className="h-8 pl-8 text-xs font-bold border-none bg-gray-50 rounded-lg focus-visible:ring-1 focus-visible:ring-primary/20"
+                            />
+                        </div>
+                    </div>
+                )}
+                <div className="p-1">
+                    <SelectItem value="all" className="text-xs font-black uppercase tracking-widest text-primary italic">🔍 All {label}s</SelectItem>
+                    {filteredOptions?.length > 0 ? (
+                        filteredOptions.map((opt: string) => (
+                            <SelectItem key={opt} value={opt} className="text-xs font-semibold">{opt}</SelectItem>
+                        ))
+                    ) : searchTerm ? (
+                        <div className="p-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">No matching {label}s</div>
+                    ) : null}
+                </div>
+            </SelectContent>
+        </Select>
+    );
+});
 CategoricalDrop.displayName = "CategoricalDrop";
 
 const FilterSection = memo(({ filters, extraFilters, filterOptions, searchColumns, onFilterChange, onAddExtra, onRemoveExtra, onUpdateExtra, onClear }: any) => (
