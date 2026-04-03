@@ -61,8 +61,7 @@ const RecordRow = memo(({ record, index, page, onView, onEdit }: {
       <span className="truncate block max-w-[280px]">{record.applicantName || "-"}</span>
     </TableCell>
     <TableCell className="font-mono text-gray-400">{record.eepacRefNo || "-"}</TableCell>
-    <TableCell>{record.appRefNo || "-"}</TableCell>
-    <TableCell>{record.bankRefNo || "-"}</TableCell>
+    <TableCell className="font-mono text-gray-600 font-bold">{record.bankRefNo || record.appRefNo || "-"}</TableCell>
     <TableCell>{record.additionalBankRef || "-"}</TableCell>
     <TableCell className="font-black text-blue-600 uppercase italic">{record.bankName || "-"}</TableCell>
     <TableCell className="uppercase">{record.branch || "-"}</TableCell>
@@ -477,7 +476,7 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
                 <TableRow className="hover:bg-transparent uppercase text-[9px] font-black tracking-widest text-gray-500">
                   <TableHead className="w-16 text-center pl-4 bg-gray-50 dark:bg-zinc-900 sticky left-0 z-40 border-r border-b">S.No</TableHead>
                   {[
-                    "Applicant Name", "EEPAC Ref", "App Ref", "Bank Ref", "Addl Bank Ref", "Bank Name", "Branch", "Case Type", "Status", "Total Amount", "Address 1", "Address 2", "City", "State", "Pin Code", "Service Location", "Customer Contact", "RM Contact", "Initiated By", "Initiation Date", "Time", "Visit Done", "Visit Date", "Visit Done By", "Report Sent", "Follow Up Date", "Branch (Alt)", "Month", "Name of Bank/FI", "Bill Sent", "Rate", "Distance", "Conveyance", "Addl Fee", "Amt Received"
+                    "Applicant Name", "EEPAC Ref", "Bank Ref", "Addl Bank Ref", "Bank Name", "Branch", "Case Type", "Status", "Total Amount", "Address 1", "Address 2", "City", "State", "Pin Code", "Service Location", "Customer Contact", "RM Contact", "Initiated By", "Initiation Date", "Time", "Visit Done", "Visit Date", "Visit Done By", "Report Sent", "Follow Up Date", "Branch (Alt)", "Month", "Name of Bank/FI", "Bill Sent", "Rate", "Distance", "Conveyance", "Addl Fee", "Amt Received"
                   ].map(h => <TableHead key={h} className="border-b whitespace-nowrap px-4">{h}</TableHead>)}
                   <TableHead className="text-right px-6 pr-8 sticky right-0 bg-white dark:bg-zinc-950 z-40 border-l border-b">Actions</TableHead>
                 </TableRow>
