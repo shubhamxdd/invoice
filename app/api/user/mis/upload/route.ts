@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
       { key: "followUpDate", aliases: ["Follow Up Date"] },
       { key: "specialFee", aliases: ["Special Fee"] },
       { key: "serviceLocation", aliases: ["Service Location"] },
-      { key: "branch1", aliases: ["Branch"] },
+      { key: "branch1", aliases: ["Branch (Alt)", "Secondary Branch", "Branch1"] },
       { key: "month", aliases: ["Month"] },
       { key: "nameOfBankFi", aliases: ["Name of Bank/FI"] },
       { key: "status", aliases: ["Status"] },
@@ -121,22 +121,27 @@ export async function POST(req: NextRequest) {
       { key: "total", aliases: ["Total"] },
       { key: "billSent", aliases: ["Bill Sent"] },
       { key: "amountReceived", aliases: ["Amount Received"] },
-      { key: "address1", aliases: ["Address"] },
+      { key: "address1", aliases: ["Address 2", "Address Alt", "Address1"] },
     ];
 
     const finalIndexMap: Record<string, number> = {};
     targetFieldConfigs.forEach(target => {
-        // 1. User manual mapping by Column Index
+        // 1. User manual mapping by Column Index (highest priority)
         const userProvidedIdx = userMapping[target.key];
         if (userProvidedIdx !== undefined && userProvidedIdx !== "") {
-            finalIndexMap[target.key] = parseInt(userProvidedIdx);
-            return;
+            const idx = parseInt(userProvidedIdx);
+            if (!isNaN(idx)) {
+                finalIndexMap[target.key] = idx;
+                return;
+            }
         }
 
-        // 2. Fuzzy match aliases to find index
+        // 2. Fuzzy match aliases (only if not manually mapped)
         for (const alias of target.aliases) {
             const foundIdx = fileHeaders.findIndex(h => h.toLowerCase() === alias.toLowerCase());
             if (foundIdx !== -1) {
+                // If this index is already used by another field that was MANUALLY mapped, we skip it
+                // to avoid cross-contamination
                 finalIndexMap[target.key] = foundIdx;
                 break;
             }
@@ -145,6 +150,9 @@ export async function POST(req: NextRequest) {
 
     const chunkSize = 100;
     let totalInserted = 0;
+    
+    // LOGGING: Let's log the first mapping to verify the brain is working
+    console.log("Extraction Brain Mapping:", JSON.stringify(finalIndexMap));
 
     for (let i = 0; i < dataRows.length; i += chunkSize) {
       const chunk = dataRows.slice(i, i + chunkSize);
