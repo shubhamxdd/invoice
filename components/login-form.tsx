@@ -44,7 +44,7 @@ export default function LoginForm() {
   return (
     <Card className="w-full max-w-md shadow-xl border-t-4 border-t-primary">
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold tracking-tight">Finoto Invoice Generation</CardTitle>
+        <CardTitle className="text-2xl font-bold tracking-tight">Finvoice Generation</CardTitle>
         <CardDescription>
           Enter your credentials to access the system
         </CardDescription>
