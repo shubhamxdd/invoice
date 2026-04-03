@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import * as XLSX from "xlsx";
 import { 
   Table, 
@@ -41,6 +41,16 @@ const TARGET_FIELDS = [
   { key: "total", label: "Total Amount", required: true },
 ];
 
+// Helper to convert index to Excel column letters (A, B, C... Z, AA, AB...)
+function getExcelColumnLetter(index: number): string {
+    let letter = "";
+    while (index >= 0) {
+        letter = String.fromCharCode((index % 26) + 65) + letter;
+        index = Math.floor(index / 26) - 1;
+    }
+    return letter;
+}
+
 export function MisMapper({ file, onMappingChange }: MisMapperProps) {
   const [headers, setHeaders] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -50,32 +60,28 @@ export function MisMapper({ file, onMappingChange }: MisMapperProps) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const data = new Uint8Array(e.target?.result as ArrayBuffer);
-      // OPTIMIZATION: ONLY read the first 20 rows for mapping/preview purposes
-      // This prevents browser freeze on large files (e.g. 10MB+)
       const workbook = XLSX.read(data, { type: "array", sheetRows: 20 });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       
-      // header: 1 returns array of arrays (first row is headers)
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown[][];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
       
       if (rows.length > 0) {
         const fileHeaders = rows[0].map(h => String(h || ""));
         setHeaders(fileHeaders);
         
-        // Auto-mapping attempt
+        // Auto-mapping attempt using indices
         const newMapping: Record<string, string> = {};
         TARGET_FIELDS.forEach(target => {
-            const match = fileHeaders.find(h => 
+            const matchIdx = fileHeaders.findIndex(h => 
                 h.toLowerCase().includes(target.label.toLowerCase()) || 
                 h.toLowerCase().includes(target.key.toLowerCase()) ||
                 (target.key === 'eepacRefNo' && h.toLowerCase().includes('eepac'))
             );
-            if (match) newMapping[target.key] = match;
+            if (matchIdx !== -1) newMapping[target.key] = matchIdx.toString();
         });
         setMapping(newMapping);
 
-        // Preview uses the same limited sheet, which is now extremely fast
-        const previewData = XLSX.utils.sheet_to_json(sheet).slice(0, 3) as Record<string, unknown>[];
+        const previewData = XLSX.utils.sheet_to_json(sheet).slice(0, 4) as Record<string, any>[];
         setPreview(previewData);
       }
     };
@@ -86,8 +92,8 @@ export function MisMapper({ file, onMappingChange }: MisMapperProps) {
     onMappingChange(mapping);
   }, [mapping, onMappingChange]);
 
-  const handleMap = (targetKey: string, fileHeader: string) => {
-    setMapping(prev => ({ ...prev, [targetKey]: fileHeader }));
+  const handleMap = (targetKey: string, indexStr: string) => {
+    setMapping(prev => ({ ...prev, [targetKey]: indexStr }));
   };
 
   return (
@@ -95,7 +101,7 @@ export function MisMapper({ file, onMappingChange }: MisMapperProps) {
       <div className="bg-amber-50/50 border border-amber-100 p-4 rounded-2xl flex items-start gap-3">
         <Info className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
         <p className="text-xs font-bold text-amber-800 uppercase leading-relaxed tracking-tight">
-          Neural Recognition detected {headers.length} columns. Please verify the mapping below to ensure high-fidelity data extraction.
+          Neural Recognition detected {headers.length} columns. Each column is identified by its unique Excel position to avoid header collisions.
         </p>
       </div>
 
@@ -129,8 +135,10 @@ export function MisMapper({ file, onMappingChange }: MisMapperProps) {
                       <SelectValue placeholder="Select column..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {headers.map((h) => (
-                        <SelectItem key={h} value={h} className="text-xs font-bold italic">{h}</SelectItem>
+                      {headers.map((h, idx) => (
+                        <SelectItem key={`${h}-${idx}`} value={idx.toString()} className="text-xs font-bold italic">
+                           {h} <span className="text-primary/40 ml-1 font-black shadow-sm">({getExcelColumnLetter(idx)})</span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -156,14 +164,14 @@ export function MisMapper({ file, onMappingChange }: MisMapperProps) {
         <CardContent className="p-6 space-y-4">
            <div className="flex items-center justify-between">
               <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Live Data Sync Preview</h4>
-              <Badge variant="outline" className="border-zinc-800 text-zinc-400 text-[9px] font-black uppercase tracking-widest italic">3 Samples Ingested</Badge>
+              <Badge variant="outline" className="border-zinc-800 text-zinc-400 text-[9px] font-black uppercase tracking-widest italic">Sample Rows</Badge>
            </div>
            <div className="space-y-3">
               {preview.map((row, i) => (
                 <div key={i} className="flex flex-wrap gap-2 text-[10px] font-mono text-zinc-300 border-b border-zinc-900 pb-2 last:border-0 italic opacity-80 hover:opacity-100 transition-opacity">
                    {Object.entries(mapping).slice(0, 4).map(([k, v]) => (
                      <span key={k} className="bg-zinc-900 px-2 py-0.5 rounded uppercase">
-                        <span className="text-indigo-400 font-black">{k}:</span> {String(row[v] || 'N/A')}
+                        <span className="text-indigo-400 font-black">{k}:</span> {String((row as any)[headers[parseInt(v)]] || 'N/A')}
                      </span>
                    ))}
                    <span className="text-zinc-600">...</span>

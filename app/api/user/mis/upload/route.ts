@@ -46,10 +46,13 @@ export async function POST(req: NextRequest) {
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     
-    // Clean data: skip completely empty rows and filter out rows with no meaningful data
-    const rawData = XLSX.utils.sheet_to_json(worksheet) as any[];
-    const data = rawData.filter(row => {
-      return Object.values(row).some(v => v !== null && v !== undefined && String(v).trim() !== "");
+    // Parse Excel as Array of Arrays to handle duplicate headers correctly
+    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+    if (rows.length < 2) return NextResponse.json({ error: "File has no data records" }, { status: 400 });
+
+    const fileHeaders = rows[0].map(h => String(h || "").trim());
+    const dataRows = rows.slice(1).filter(row => {
+      return row.some(v => v !== null && v !== undefined && String(v).trim() !== "");
     });
 
     // Ensure upload directory exists
@@ -58,9 +61,9 @@ export async function POST(req: NextRequest) {
     
     const fileName = `${Date.now()}_${file.name}`;
     const filePath = path.join(uploadDir, fileName);
-    await fs.writeFile(filePath, buffer);
+    await fs.writeFile(filePath, buffer); 
 
-    // Create MIS File record (initial record count)
+    // Create MIS File record
     const misFile = await prisma.misFile.create({
       data: {
         fileName: file.name,
@@ -71,16 +74,12 @@ export async function POST(req: NextRequest) {
         notes,
         status: "processing",
         uploadedBy: session.user.id!,
-        recordCount: data.length,
+        recordCount: dataRows.length,
       },
     });
 
-    // Extract Records using Mapping (HIGH PERFORMANCE REWRITE)
-    const chunkSize = 100;
-    let totalInserted = 0;
-    
-    // Step 1: Pre-calculate the mapping for all system fields ONCE
-    // This removes the need to search through headers for every single row
+    // Extract Records using INDEX-BASED Mapping
+    // This solves the "duplicate header" problem once and for all
     const targetFieldConfigs = [
       { key: "sNo", aliases: ["S. No", "S No", "SNo"] },
       { key: "eepacRefNo", aliases: ["EEPAC Reference No", "EEPAC Ref"] },
@@ -125,48 +124,40 @@ export async function POST(req: NextRequest) {
       { key: "address1", aliases: ["Address"] },
     ];
 
-    // Build the finalized mapping map (TargetKey -> Exact Header Name)
-    // This is the "Brain" of the extraction logic
-    const finalHeaderMap: Record<string, string> = {};
-    if (data.length > 0) {
-      const actualHeaders = Object.keys(data[0]);
-      targetFieldConfigs.forEach(target => {
-        // 1. Check user mapping first
-        const userProvided = userMapping[target.key];
-        if (userProvided && actualHeaders.includes(userProvided)) {
-           finalHeaderMap[target.key] = userProvided;
-           return;
+    const finalIndexMap: Record<string, number> = {};
+    targetFieldConfigs.forEach(target => {
+        // 1. User manual mapping by Column Index
+        const userProvidedIdx = userMapping[target.key];
+        if (userProvidedIdx !== undefined && userProvidedIdx !== "") {
+            finalIndexMap[target.key] = parseInt(userProvidedIdx);
+            return;
         }
 
-        // 2. Fuzzy match aliases (O(Aliases * Headers) - done only once)
+        // 2. Fuzzy match aliases to find index
         for (const alias of target.aliases) {
-            if (actualHeaders.includes(alias)) {
-                finalHeaderMap[target.key] = alias;
-                break;
-            }
-            const found = actualHeaders.find(h => h.toLowerCase().trim() === alias.toLowerCase().trim());
-            if (found) {
-                finalHeaderMap[target.key] = found;
+            const foundIdx = fileHeaders.findIndex(h => h.toLowerCase() === alias.toLowerCase());
+            if (foundIdx !== -1) {
+                finalIndexMap[target.key] = foundIdx;
                 break;
             }
         }
-      });
-    }
+    });
 
-    // Process chunks with the optimized map
-    for (let i = 0; i < data.length; i += chunkSize) {
-      const chunk = data.slice(i, i + chunkSize);
+    const chunkSize = 100;
+    let totalInserted = 0;
+
+    for (let i = 0; i < dataRows.length; i += chunkSize) {
+      const chunk = dataRows.slice(i, i + chunkSize);
       
       const recordsToInsert = chunk.map((row, index) => {
         const getRaw = (key: string) => {
-           const actualHeader = finalHeaderMap[key];
-           return actualHeader ? row[actualHeader] : "";
+           const colIdx = finalIndexMap[key];
+           return colIdx !== undefined ? row[colIdx] : "";
         };
 
         const applicantName = String(getRaw("applicantName") || "");
         const eepacRefNo = String(getRaw("eepacRefNo") || "");
         
-        // Skip empty rows
         if (!applicantName && !eepacRefNo) return null;
 
         const rate = parseFloat(getRaw("rate") || "0") || 0;
