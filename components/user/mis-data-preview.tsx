@@ -144,6 +144,24 @@ const TableContent = memo(({ isLoading, records, page, onView, onEdit }: {
 });
 TableContent.displayName = "TableContent";
 
+const CategoricalDrop = memo(({ type, options, label, value, onChange }: any) => (
+    <Select value={value || "all"} onValueChange={(v) => onChange(type, v === "all" ? "" : v)}>
+        <SelectTrigger className="h-11 bg-gray-50/50 dark:bg-zinc-900 border-gray-200 font-bold uppercase text-[10px] tracking-wider rounded-xl truncate">
+            <div className="flex items-center gap-2 truncate opacity-80">
+                <span className="text-[8px] font-black text-primary/40">{label}:</span>
+                <SelectValue placeholder={`Select ${label}`} />
+            </div>
+        </SelectTrigger>
+        <SelectContent className="rounded-xl max-h-[400px]">
+            <SelectItem value="all">All {label}s</SelectItem>
+            {options?.map((opt: string) => (
+                <SelectItem key={opt} value={opt} className="text-xs font-semibold">{opt}</SelectItem>
+            ))}
+        </SelectContent>
+    </Select>
+));
+CategoricalDrop.displayName = "CategoricalDrop";
+
 const FilterSection = memo(({ filters, extraFilters, filterOptions, searchColumns, onFilterChange, onAddExtra, onRemoveExtra, onUpdateExtra, onClear }: any) => (
     <Card className="border-none shadow-md overflow-hidden ring-1 ring-gray-100 dark:ring-zinc-800 backdrop-blur-sm bg-white dark:bg-zinc-950 p-6">
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -243,19 +261,10 @@ const FilterSection = memo(({ filters, extraFilters, filterOptions, searchColumn
     </div>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-10 pt-8 border-t border-gray-100">
-        {['bank', 'branch', 'caseType', 'status'].map(type => (
-            <Select key={type} value={filters[type] || "all"} onValueChange={(v) => onFilterChange(type, v === "all" ? "" : v)}>
-                <SelectTrigger className="h-11 bg-gray-50/50 dark:bg-zinc-900 border-gray-200 font-bold uppercase text-[11px] tracking-wider rounded-xl truncate">
-                    <SelectValue placeholder={type.replace(/^\w/, c => c.toUpperCase())} />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl max-h-[300px]">
-                    <SelectItem value="all">All {type}s</SelectItem>
-                    {(filterOptions as any)[type + 's']?.map((opt: string) => (
-                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-        ))}
+        <CategoricalDrop type="bank" options={filterOptions.banks} label="Bank" value={filters.bank} onChange={onFilterChange} />
+        <CategoricalDrop type="branch" options={filterOptions.branches} label="Branch" value={filters.branch} onChange={onFilterChange} />
+        <CategoricalDrop type="caseType" options={filterOptions.caseTypes} label="Case Type" value={filters.caseType} onChange={onFilterChange} />
+        <CategoricalDrop type="status" options={filterOptions.statuses} label="Status" value={filters.status} onChange={onFilterChange} />
     </div>
   </Card>
 ));
@@ -348,11 +357,9 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
   useEffect(() => { fetchFilterOptions(); }, [filters.bank, filters.branch, filters.caseType, filters.status]);
 
   const handleFilterChange = (key: string, value: string) => {
-    startTransition(() => {
-        setFilters(prev => ({ ...prev, [key]: value }));
-        setPage(1); 
-        setPageInput("1");
-    });
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setPage(1); 
+    setPageInput("1");
   };
 
   const onAddExtra = () => setExtraFilters(prev => [...prev, { field: "applicantName", value: "" }]);
@@ -446,6 +453,24 @@ export function MisDataPreview({ userId }: MisDataPreviewProps) {
             </Table>
           </div>
         </CardContent>
+        <div className="p-4 border-t bg-gray-50/50 dark:bg-zinc-900/50 flex items-center justify-between">
+           <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                {totalCount > 0 ? (
+                    <>Showing {(page - 1) * 10 + 1}–{Math.min(page * 10, totalCount)} of <span className="text-emerald-600 font-black px-1.5 py-0.5 rounded bg-emerald-500/5 ring-1 ring-emerald-500/10 mx-1">{totalCount.toLocaleString()}</span> identified records</>
+                ) : (
+                    "No records matching criteria"
+                )}
+              </p>
+           </div>
+           <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-tighter text-gray-400">
+              <div className="flex items-center gap-1.5 italic">
+                 <FileText className="h-3 w-3 text-primary/50" />
+                 <span>MIS DATABASE SYNCHRONIZED</span>
+              </div>
+           </div>
+        </div>
       </Card>
     </div>
   );
