@@ -6,29 +6,43 @@ export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { searchParams } = new URL(req.url);
+  const bank = searchParams.get("bank");
+  const state = searchParams.get("state");
+
+  const baseWhere = { misFile: { uploadedBy: session.user.id } };
+
   try {
     const [banks, branches, states, total] = await Promise.all([
+      // Banks are always all available for the user
       prisma.misRecord.findMany({
-        where: { misFile: { uploadedBy: session.user.id } },
+        where: baseWhere,
         distinct: ["bankName"],
         select: { bankName: true },
         orderBy: { bankName: "asc" }
       }),
+      // Branches filtered by bank and state
       prisma.misRecord.findMany({
-        where: { misFile: { uploadedBy: session.user.id } },
+        where: {
+          ...baseWhere,
+          ...(bank && bank !== "all" ? { bankName: bank } : {}),
+          ...(state && state !== "all" ? { state: state } : {}),
+        },
         distinct: ["branch"],
         select: { branch: true },
         orderBy: { branch: "asc" }
       }),
+      // States filtered by bank
       prisma.misRecord.findMany({
-        where: { misFile: { uploadedBy: session.user.id } },
+        where: {
+          ...baseWhere,
+          ...(bank && bank !== "all" ? { bankName: bank } : {}),
+        },
         distinct: ["state"],
         select: { state: true },
         orderBy: { state: "asc" }
       }),
-      prisma.misRecord.count({
-        where: { misFile: { uploadedBy: session.user.id } }
-      })
+      prisma.misRecord.count({ where: baseWhere })
     ]);
 
     return NextResponse.json({

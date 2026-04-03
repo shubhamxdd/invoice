@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { 
   Building2, 
   Landmark, 
@@ -44,6 +45,62 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const CategoricalDrop = ({ type, options, label, value, onChange }: any) => {
+    const [searchTerm, setSearchTerm] = React.useState("");
+    
+    const filteredOptions = React.useMemo(() => {
+        if (!searchTerm) return options;
+        return options?.filter((opt: string) => 
+            opt.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [options, searchTerm]);
+
+    return (
+        <Select 
+            value={value || "all"} 
+            onValueChange={(v) => onChange(type, v)}
+            onOpenChange={(open) => !open && setSearchTerm("")}
+        >
+            <SelectTrigger className="h-11 bg-white dark:bg-zinc-900 border-gray-200 font-bold uppercase text-[10px] tracking-wider rounded-xl truncate shadow-sm">
+                <div className="flex items-center gap-2 truncate opacity-80">
+                    <span className="text-[8px] font-black text-primary/40">{label}:</span>
+                    <SelectValue placeholder={`Select ${label}`} />
+                </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl max-h-[450px] p-0 shadow-2xl border-gray-100">
+                {(type === 'bank' || type === 'branch') && (
+                    <div className="sticky top-0 p-2 bg-white dark:bg-zinc-950 border-b border-gray-100 z-50">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-primary/50" />
+                            <Input 
+                                placeholder={`Search ${label}s...`}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyDown={(e) => {
+                                   e.stopPropagation();
+                                }}
+                                className="h-8 pl-8 text-xs font-bold border-none bg-gray-50 rounded-lg focus-visible:ring-1 focus-visible:ring-primary/20"
+                            />
+                        </div>
+                    </div>
+                )}
+                <div className="p-1">
+                    <SelectItem value="all" className="text-xs font-black uppercase tracking-widest text-primary italic">🔍 All {label}s</SelectItem>
+                    {filteredOptions?.length > 0 ? (
+                        filteredOptions.map((opt: string) => (
+                            <SelectItem key={opt} value={opt} className="text-xs font-semibold">{opt}</SelectItem>
+                        ))
+                    ) : searchTerm ? (
+                        <div className="p-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">No matching {label}s</div>
+                    ) : null}
+                </div>
+            </SelectContent>
+        </Select>
+    );
+};
+
 import { useRouter } from "next/navigation";
 import { 
   DropdownMenu, 
@@ -115,6 +172,17 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
   const [viewingRecord, setViewingRecord] = useState<MisRecord | null>(null);
   const [goToPage, setGoToPage] = useState("");
 
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => {
+        const next = { ...prev, [key]: value };
+        if (key === "bank" && value !== prev.bank) {
+            next.branch = "all";
+            next.state = "all";
+        }
+        return next;
+    });
+  };
+
   // Fetch record count and filter options when step 2 opens or filters change
   useEffect(() => {
     if (step === 2) {
@@ -133,14 +201,19 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
           const data = await response.json();
           setRecordCount(data.total || 0);
           
-          // Only fetch bank/branch info once when step 2 first appears
+          // Re-fetch branches and states based on current selection for dependency
+          const infoParams = new URLSearchParams({
+            bank: filters.bank,
+            state: filters.state
+          });
+          const infoRes = await fetch(`/api/user/mis/filter-info?${infoParams.toString()}`);
+          const infoData = await infoRes.json();
+          
           if (availableBanks.length === 0) {
-            const infoRes = await fetch("/api/user/mis/filter-info");
-            const infoData = await infoRes.json();
             setAvailableBanks(infoData.banks || []);
-            setAvailableBranches(infoData.branches || []);
-            setAvailableStates(infoData.states || []);
           }
+          setAvailableBranches(infoData.branches || []);
+          setAvailableStates(infoData.states || []);
         } catch (error) {
           console.error("Filter info load fail:", error);
         }
@@ -302,64 +375,28 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                    </div>
                    <CardDescription className="text-[10px] uppercase font-black tracking-widest text-gray-400">Target specific records for this batch</CardDescription>
                  </CardHeader>
-                 <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Bank Selection</Label>
-                      <Select defaultValue="all" onValueChange={(v) => handleFilterChange("bank", v)}>
-                        <SelectTrigger className="h-11 bg-gray-50 border-none font-bold shadow-sm">
-                          <SelectValue placeholder="All Banks" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Banks</SelectItem>
-                          {availableBanks.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Branch (Optional)</Label>
-                       <Select defaultValue="all" onValueChange={(v) => handleFilterChange("branch", v)}>
-                         <SelectTrigger className="h-11 bg-gray-50 border-none font-bold shadow-sm">
-                           <SelectValue placeholder="All Branches" />
-                         </SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="all">All Branches</SelectItem>
-                           {availableBranches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                         </SelectContent>
-                       </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">State Filter</Label>
-                       <Select defaultValue="all" onValueChange={(v) => handleFilterChange("state", v)}>
-                         <SelectTrigger className="h-11 bg-gray-50 border-none font-bold shadow-sm">
-                           <SelectValue placeholder="All States" />
-                         </SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="all">All States</SelectItem>
-                           {availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                         </SelectContent>
-                       </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Date From</Label>
-                       <Input 
-                        type="date" 
-                        className="h-11 bg-gray-50 border-none font-bold shadow-sm"
-                        value={filters.dateFrom}
-                        onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
-                       />
-                    </div>
- 
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Date To</Label>
-                       <Input 
-                        type="date" 
-                        className="h-11 bg-gray-50 border-none font-bold shadow-sm"
-                        value={filters.dateTo}
-                        onChange={(e) => handleFilterChange("dateTo", e.target.value)}
-                       />
+                 <CardContent className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <CategoricalDrop type="bank" options={availableBanks} label="Bank" value={filters.bank} onChange={handleFilterChange} />
+                      <CategoricalDrop type="branch" options={availableBranches} label="Branch" value={filters.branch} onChange={handleFilterChange} />
+                      <CategoricalDrop type="state" options={availableStates} label="State" value={filters.state} onChange={handleFilterChange} />
+                      <CategoricalDrop type="caseType" options={["FRESH", "FOLLOW UP", "RE-VISIT", "VALUATION", "LEGAL", "TECHNICAL"]} label="Type" value={filters.caseType} onChange={handleFilterChange} />
+                      <CategoricalDrop type="status" options={["COMPLETE", "PENDING", "HOLD", "CANCELLED"]} label="Status" value={filters.status} onChange={handleFilterChange} />
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input 
+                          type="date" 
+                          value={filters.dateFrom} 
+                          onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
+                          className="h-11 rounded-xl border-gray-200 bg-white dark:bg-zinc-900 font-bold text-[10px] uppercase shadow-sm focus:ring-primary/20 p-2"
+                        />
+                        <Input 
+                          type="date" 
+                          value={filters.dateTo} 
+                          onChange={(e) => handleFilterChange("dateTo", e.target.value)}
+                          className="h-11 rounded-xl border-gray-200 bg-white dark:bg-zinc-900 font-bold text-[10px] uppercase shadow-sm focus:ring-primary/20 p-2"
+                        />
+                      </div>
                     </div>
                  </CardContent>
                  <CardFooter className="bg-gray-50/30 p-4 border-t flex items-center justify-between">
@@ -797,11 +834,4 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
       )}
     </div>
   );
-
-  function handleFilterChange(key: string, value: string) {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  }
 }
-
-import Link from "next/link";
-import { cn } from "@/lib/utils";
