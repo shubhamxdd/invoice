@@ -58,8 +58,8 @@ export function AddUserDialog() {
       setIsOpen(false);
       setFormData({ username: "", fullName: "", email: "", password: "", role: "user" });
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create user");
     } finally {
       setIsLoading(false);
     }

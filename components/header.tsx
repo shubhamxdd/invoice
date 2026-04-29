@@ -14,8 +14,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { signOut } from "next-auth/react";
 
+import { SessionUser } from "@/types";
+
 interface HeaderProps {
-  user: any;
+  user: SessionUser | null | undefined;
 }
 
 export function Header({ user }: HeaderProps) {

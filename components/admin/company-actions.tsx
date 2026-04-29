@@ -31,17 +31,17 @@ export function CompanyActions({ company }: CompanyActionsProps) {
   const [formData, setFormData] = useState({
     name: company.name,
     address: company.address || "",
-    state: (company as any).state || "Delhi",
+    state: company.state || "Delhi",
     gstNumber: company.gstNumber || "",
     panNumber: company.panNumber || "",
-    cin: (company as any).cin || "",
-    udyamNumber: (company as any).udyamNumber || "",
-    sacHsnCode: (company as any).sacHsnCode || "",
+    cin: company.cin || "",
+    udyamNumber: company.udyamNumber || "",
+    sacHsnCode: company.sacHsnCode || "",
     contactEmail: company.contactEmail || "",
-    bankName: (company as any).bankName || "",
-    branchName: (company as any).branchName || "",
-    accountNumber: (company as any).accountNumber || "",
-    ifscCode: (company as any).ifscCode || "",
+    bankName: company.bankName || "",
+    branchName: company.branchName || "",
+    accountNumber: company.accountNumber || "",
+    ifscCode: company.ifscCode || "",
     isActive: company.isActive,
   });
 
@@ -61,8 +61,8 @@ export function CompanyActions({ company }: CompanyActionsProps) {
       toast.success("Company profile updated successfully!");
       setIsEditOpen(false);
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Update failed");
     } finally {
       setIsLoading(false);
     }
@@ -81,8 +81,8 @@ export function CompanyActions({ company }: CompanyActionsProps) {
       toast.success("Company profile deleted successfully!");
       setIsDeleteOpen(false);
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Deletion failed");
     } finally {
       setIsLoading(false);
     }

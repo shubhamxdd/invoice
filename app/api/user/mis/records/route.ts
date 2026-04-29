@@ -9,7 +9,6 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get("page") || "1");
   const pageSize = 10;
-  
   const q = searchParams.get("q") || "";
   const bank = searchParams.get("bank") || "";
   const branch = searchParams.get("branch") || "";
@@ -28,6 +27,7 @@ export async function GET(req: NextRequest) {
 
   if (misFileId) where.misFileId = misFileId;
 
+  // Global search
   if (q) {
     if (searchColumn === "all") {
       where.OR = [
@@ -43,11 +43,28 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  if (bank && bank !== "all") where.bankName = bank;
-  if (branch && branch !== "all") where.branch = branch;
-  if (caseType && caseType !== "all") where.caseType = caseType;
-  if (status && status !== "all") where.status = status;
-  if (state && state !== "all") where.state = state;
+  // Dynamic Stackable Text Filters
+  const allowedFields = [
+    "applicantName", "eepacRefNo", "appRefNo", "bankRefNo", 
+    "additionalBankRef", "city", "state", "pinCode", 
+    "caseType", "bankName", "branch", "status", "visitDoneBy",
+    "serviceLocation"
+  ];
+
+  allowedFields.forEach(field => {
+    const val = searchParams.get(field);
+    if (val && val !== "all") {
+      if (!where[field]) { // Don't override global search if it already set something
+          where[field] = { contains: val };
+      }
+    }
+  });
+
+  if (bank && bank !== "all" && !where.bankName) where.bankName = bank;
+  if (branch && branch !== "all" && !where.branch) where.branch = branch;
+  if (caseType && caseType !== "all" && !where.caseType) where.caseType = caseType;
+  if (status && status !== "all" && !where.status) where.status = status;
+  if (state && state !== "all" && !where.state) where.state = state;
 
   if (dateFrom || dateTo) {
     where.initiationDate = {};

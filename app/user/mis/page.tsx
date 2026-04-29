@@ -1,8 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Layers, FileText, Search, Filter, Download, Trash2, Eye, Table as TableIcon } from "lucide-react";
+import { Layers, FileText, Filter, Table as TableIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -13,10 +12,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MisDataPreview } from "@/components/user/mis-data-preview";
 import { MisFileActions } from "@/components/user/mis-file-actions";
 import { TableSearch } from "@/components/admin/table-search";
+import { cn } from "@/lib/utils";
 
 export default async function MisManagementPage(props: {
   searchParams: Promise<{ tab?: string; q?: string; page?: string }>;
@@ -173,8 +173,4 @@ export default async function MisManagementPage(props: {
       </Tabs>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(" ");
 }

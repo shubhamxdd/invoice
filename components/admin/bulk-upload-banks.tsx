@@ -31,8 +31,8 @@ export function BulkUploadBanks() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [previewData, setPreviewData] = useState<any[]>([]);
-  const [results, setResults] = useState<{ success: number; failed: number; errors: any[] } | null>(null);
+  const [previewData, setPreviewData] = useState<unknown[]>([]);
+  const [results, setResults] = useState<{ success: number; failed: number; errors: { row?: number; message: string; }[] } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 

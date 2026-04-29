@@ -1,8 +1,6 @@
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Users, Plus, Search, RefreshCw, Trash2, Edit, UserPlus, Shield, User as UserIcon, MoreHorizontal } from "lucide-react";
+import { Users, RefreshCw, Shield, User as UserIcon, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -12,11 +10,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AddUserDialog } from "@/components/admin/add-user-dialog";
 import { TableSearch } from "@/components/admin/table-search";
 import { UserActions } from "@/components/admin/user-actions";
+import { cn } from "@/lib/utils";
 
 export default async function UserManagementPage(props: {
   searchParams: Promise<{ q?: string }>;
@@ -144,12 +143,4 @@ export default async function UserManagementPage(props: {
       </Card>
     </div>
   );
-}
-
-const AlertCircle = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-);
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(" ");
 }

@@ -10,8 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Landmark, User, MapPin, Calendar, Clock, DollarSign, FileText, CheckCircle, Tag, Phone, Mail, Building } from "lucide-react";
 
+import { MisRecord } from "@/types";
+
 interface ViewRecordDialogProps {
-  record: any;
+  record: MisRecord | null;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }

@@ -159,7 +159,7 @@ model MisRecord {
 }
 
 model InvoiceBatch {
-  id             String   @id @default(cuid())
+id             String   @id @default(cuid())
   invoiceNo      String   @unique
   companyId      String
   company        Company  @relation(fields: [companyId], references: [id])

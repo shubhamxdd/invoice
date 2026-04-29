@@ -27,6 +27,23 @@ const normalizeState = (s: any): string => {
   return lookup[cleaned] || cleaned;
 };
 
+const FIELD_MAP: Record<string, string> = {
+  visitDate: "Date of visit",
+  caseType: "Case Type",
+  branch: "Branch Name",
+  address: "Address",
+  initiatedBy: "Initiated By",
+  eepacRefNo: "Deal No (Ref)",
+  applicantName: "Customer Name",
+  initiationDate: "Date of Init",
+  month: "Month",
+  rate: "Charges",
+  appRefNo: "App Ref",
+  city: "City",
+  state: "State",
+  status: "Status",
+};
+
 /**
  * Premium Master PDF Template Generator
  * Matches the structure of the provided reference image.
@@ -211,6 +228,8 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
   doc.setFontSize(10);
   doc.text("ANNEXURE: Detailed Case Records", 15, 20);
 
+  const selectedFields = options.annexureFields || ["visitDate", "caseType", "branch", "address", "initiatedBy", "eepacRefNo", "applicantName", "initiationDate", "month", "rate"];
+  
   // Totals for Annexure
   let totalCharges = 0;
   let totalCgst = 0;
@@ -231,42 +250,31 @@ export async function generatePdfInvoice(records: any[], company: any, filename:
     totalIgst += ig;
     totalFinal += tot;
 
-    return [
-      i + 1,
-      invoiceSerial,
-      r.visitDate || "-",
-      r.caseType || "-",
-      r.branch || "-",
-      r.address || "-",
-      r.initiatedBy || "-",
-      r.eepacRefNo || "-",
-      r.applicantName || "-",
-      r.initiationDate || "-",
-      r.month || "-",
-      charge.toLocaleString("en-IN"),
-      c > 0 ? c.toLocaleString("en-IN") : "—",
-      s > 0 ? s.toLocaleString("en-IN") : "—",
-      ig > 0 ? ig.toLocaleString("en-IN") : "—",
-      tot.toLocaleString("en-IN")
-    ];
+    const row = [i + 1, invoiceSerial];
+    selectedFields.forEach(field => {
+      row.push(r[field] || "-");
+    });
+    row.push(charge.toLocaleString("en-IN"));
+    row.push(c > 0 ? c.toLocaleString("en-IN") : "—");
+    row.push(s > 0 ? s.toLocaleString("en-IN") : "—");
+    row.push(ig > 0 ? ig.toLocaleString("en-IN") : "—");
+    row.push(tot.toLocaleString("en-IN"));
+    
+    return row;
   });
+
+  const annexureHeaders = ["Sr No", "Invoice No", ...selectedFields.map(f => FIELD_MAP[f] || f.toUpperCase()), "Charges", "CGST", "SGST", "IGST", "Total Amount"];
 
   autoTable(doc, {
     startY: 25,
-    head: [["Sr No", "Invoice No", "Date of visit", "Case Type", "Branch Name", "Address", "Initiated By", "Deal No", "Customer Name", "Date of Initiation", "Month", "Charges", "CGST (9%)", "SGST (9%)", "IGST (18%)", "Total Amount"]],
+    head: [annexureHeaders],
     body: detailedRows,
     theme: "grid",
-    styles: { fontSize: 4.5, cellPadding: 1, textColor: 0 },
+    styles: { fontSize: 4, cellPadding: 0.8, textColor: 0 }, // Optimized for more columns
     headStyles: { fillColor: [255, 255, 255], textColor: 0, fontStyle: "bold" },
-    columnStyles: {
-      0: { cellWidth: 5 },
-      1: { cellWidth: 15 },
-      5: { cellWidth: 30 }, // Address
-      8: { cellWidth: 15 }  // Customer
-    },
     showFoot: 'lastPage',
     foot: [
-      [{ content: "TOTAL", colSpan: 11, styles: { halign: "right", fontStyle: "bold" } }, 
+      [{ content: "TOTAL", colSpan: selectedFields.length + 2, styles: { halign: "right", fontStyle: "bold" } }, 
        totalCharges.toLocaleString("en-IN"), 
        totalCgst > 0 ? totalCgst.toLocaleString("en-IN") : "—", 
        totalSgst > 0 ? totalSgst.toLocaleString("en-IN") : "—", 
@@ -597,7 +605,10 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
   sheet2.addRow(["ANNEXURE: Detailed Case Records"]).font = { bold: true, size: 12 };
   sheet2.addRow([]);
 
-  const detailedHeaderRow = sheet2.addRow(["Sr No", "Invoice No", "Date of visit", "Case Type", "Branch Name", "Address", "Initiated By", "Deal No", "Customer Name", "Date of Initiation", "Month", "Charges", "CGST (9%)", "SGST (9%)", "IGST (18%)", "Total Amount"]);
+  const selectedFields = options.annexureFields || ["visitDate", "caseType", "branch", "address", "initiatedBy", "eepacRefNo", "applicantName", "initiationDate", "month", "rate"];
+  const annexureHeaders = ["Sr No", "Invoice No", ...selectedFields.map(f => FIELD_MAP[f] || f.toUpperCase()), "Charges", "CGST", "SGST", "IGST", "Total Amount"];
+
+  const detailedHeaderRow = sheet2.addRow(annexureHeaders);
   detailedHeaderRow.eachCell(c => {
     c.font = { bold: true, size: 8 };
     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
@@ -610,26 +621,29 @@ export async function generateExcelInvoice(records: any[], company: any, filenam
     const c = charge * cgstRate, s = charge * sgstRate, ig = charge * igstRate, tot = charge + c + s + ig;
     tCharges += charge; tCgst += c; tSgst += s; tIgst += ig; tFinal += tot;
 
-    const row = sheet2.addRow([
-      i + 1, invoiceSerial, r.visitDate || "-", r.caseType || "-", r.branch || "-", r.address || "-",
-      r.initiatedBy || "-", r.eepacRefNo || "-", r.applicantName || "-", r.initiationDate || "-", r.month || "-",
-      charge, c > 0 ? c : "—", s > 0 ? s : "—", ig > 0 ? ig : "—", tot
-    ]);
+    const rowData = [i + 1, invoiceSerial];
+    selectedFields.forEach(field => {
+      rowData.push(r[field] || "-");
+    });
+    rowData.push(charge, c > 0 ? c : "—", s > 0 ? s : "—", ig > 0 ? ig : "—", tot);
+
+    const row = sheet2.addRow(rowData);
     row.eachCell(cell => {
       cell.font = { size: 7 };
       cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
     });
   });
 
-  const totalRowFinal = sheet2.addRow(["TOTAL", "", "", "", "", "", "", "", "", "", "", tCharges, tCgst > 0 ? tCgst : "—", tSgst > 0 ? tSgst : "—", tIgst > 0 ? tIgst : "—", tFinal]);
-  sheet2.mergeCells(`A${totalRowFinal.number}:K${totalRowFinal.number}`);
+  // Dynamic Total Row
+  const totalRowData = new Array(selectedFields.length + 2).fill("");
+  totalRowData[0] = "TOTAL";
+  totalRowData.push(tCharges, tCgst > 0 ? tCgst : "—", tSgst > 0 ? tSgst : "—", tIgst > 0 ? tIgst : "—", tFinal);
+
+  const totalRowFinal = sheet2.addRow(totalRowData);
+  sheet2.mergeCells(totalRowFinal.number, 1, totalRowFinal.number, selectedFields.length + 2);
   totalRowFinal.eachCell(c => { c.font = { bold: true, size: 8 }; c.border = { top: { style: 'thick' }, bottom: { style: 'thick' } }; });
 
-  sheet2.columns.forEach((col, i) => { 
-    if (i === 5) col.width = 40; 
-    else if ([3, 4, 6, 8, 9].includes(i)) col.width = 20;
-    else col.width = 12;
-  });
+  sheet2.columns.forEach((col, i) => { col.width = 15; });
 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer as any);

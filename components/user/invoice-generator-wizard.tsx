@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { 
   Building2, 
   Landmark, 
@@ -17,7 +18,8 @@ import {
   Table as TableIcon,
   Search,
   Check,
-  Info
+  Info,
+  ListFilter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -43,12 +45,97 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const CategoricalDrop = ({ type, options, label, value, onChange }: any) => {
+    const [searchTerm, setSearchTerm] = React.useState("");
+    
+    const filteredOptions = React.useMemo(() => {
+        if (!searchTerm) return options;
+        return options?.filter((opt: string) => 
+            opt.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [options, searchTerm]);
+
+    return (
+        <Select 
+            value={value || "all"} 
+            onValueChange={(v) => onChange(type, v)}
+            onOpenChange={(open) => !open && setSearchTerm("")}
+        >
+            <SelectTrigger className="h-11 bg-white dark:bg-zinc-900 border-gray-200 font-bold uppercase text-[10px] tracking-wider rounded-xl truncate shadow-sm">
+                <div className="flex items-center gap-2 truncate opacity-80">
+                    <span className="text-[8px] font-black text-primary/40">{label}:</span>
+                    <SelectValue placeholder={`Select ${label}`} />
+                </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl max-h-[450px] p-0 shadow-2xl border-gray-100">
+                {(type === 'bank' || type === 'branch') && (
+                    <div className="sticky top-0 p-2 bg-white dark:bg-zinc-950 border-b border-gray-100 z-50">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-primary/50" />
+                            <Input 
+                                placeholder={`Search ${label}s...`}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyDown={(e) => {
+                                   e.stopPropagation();
+                                }}
+                                className="h-8 pl-8 text-xs font-bold border-none bg-gray-50 rounded-lg focus-visible:ring-1 focus-visible:ring-primary/20"
+                            />
+                        </div>
+                    </div>
+                )}
+                <div className="p-1">
+                    <SelectItem value="all" className="text-xs font-black uppercase tracking-widest text-primary italic">🔍 All {label}s</SelectItem>
+                    {filteredOptions?.length > 0 ? (
+                        filteredOptions.map((opt: string) => (
+                            <SelectItem key={opt} value={opt} className="text-xs font-semibold">{opt}</SelectItem>
+                        ))
+                    ) : searchTerm ? (
+                        <div className="p-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">No matching {label}s</div>
+                    ) : null}
+                </div>
+            </SelectContent>
+        </Select>
+    );
+};
+
 import { useRouter } from "next/navigation";
+import { 
+  DropdownMenu, 
+  DropdownMenuCheckboxItem, 
+  DropdownMenuContent, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { EditRecordDialog } from "./edit-record-dialog";
+import { ViewRecordDialog } from "./view-record-dialog";
+
+import { Company, MisRecord } from "@/types";
 
 interface InvoiceGeneratorWizardProps {
-  companies: any[];
+  companies: Company[];
   userId?: string;
 }
+
+const ANNEXURE_FIELD_OPTIONS = [
+  { label: "Date of Visit", value: "visitDate" },
+  { label: "Case Type", value: "caseType" },
+  { label: "Branch Name", value: "branch" },
+  { label: "Address", value: "address" },
+  { label: "Initiated By", value: "initiatedBy" },
+  { label: "Deal No (Ref No)", value: "eepacRefNo" },
+  { label: "Customer Name", value: "applicantName" },
+  { label: "Date of Initiation", value: "initiationDate" },
+  { label: "Month", value: "month" },
+  { label: "Charges (Rate)", value: "rate" },
+  { label: "App Ref No", value: "appRefNo" },
+  { label: "City", value: "city" },
+  { label: "State", value: "state" },
+  { label: "Status", value: "status" },
+];
 
 export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWizardProps) {
   const [step, setStep] = useState(1);
@@ -68,11 +155,12 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
     groupByBank: true,
     groupByBranch: false,
     customInvoiceName: "invoice",
+    annexureFields: ["visitDate", "caseType", "branch", "address", "initiatedBy", "eepacRefNo", "applicantName", "initiationDate", "month", "rate"],
   });
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [previewData, setPreviewData] = useState<MisRecord[]>([]);
   const [previewTotal, setPreviewTotal] = useState(0);
   const [previewPage, setPreviewPage] = useState(1);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -80,6 +168,20 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
   const [availableBanks, setAvailableBanks] = useState<string[]>([]);
   const [availableBranches, setAvailableBranches] = useState<string[]>([]);
   const [availableStates, setAvailableStates] = useState<string[]>([]);
+  const [editingRecord, setEditingRecord] = useState<MisRecord | null>(null);
+  const [viewingRecord, setViewingRecord] = useState<MisRecord | null>(null);
+  const [goToPage, setGoToPage] = useState("");
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => {
+        const next = { ...prev, [key]: value };
+        if (key === "bank" && value !== prev.bank) {
+            next.branch = "all";
+            next.state = "all";
+        }
+        return next;
+    });
+  };
 
   // Fetch record count and filter options when step 2 opens or filters change
   useEffect(() => {
@@ -99,14 +201,19 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
           const data = await response.json();
           setRecordCount(data.total || 0);
           
-          // Only fetch bank/branch info once when step 2 first appears
+          // Re-fetch branches and states based on current selection for dependency
+          const infoParams = new URLSearchParams({
+            bank: filters.bank,
+            state: filters.state
+          });
+          const infoRes = await fetch(`/api/user/mis/filter-info?${infoParams.toString()}`);
+          const infoData = await infoRes.json();
+          
           if (availableBanks.length === 0) {
-            const infoRes = await fetch("/api/user/mis/filter-info");
-            const infoData = await infoRes.json();
             setAvailableBanks(infoData.banks || []);
-            setAvailableBranches(infoData.branches || []);
-            setAvailableStates(infoData.states || []);
           }
+          setAvailableBranches(infoData.branches || []);
+          setAvailableStates(infoData.states || []);
         } catch (error) {
           console.error("Filter info load fail:", error);
         }
@@ -268,64 +375,28 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                    </div>
                    <CardDescription className="text-[10px] uppercase font-black tracking-widest text-gray-400">Target specific records for this batch</CardDescription>
                  </CardHeader>
-                 <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Bank Selection</Label>
-                      <Select defaultValue="all" onValueChange={(v) => handleFilterChange("bank", v)}>
-                        <SelectTrigger className="h-11 bg-gray-50 border-none font-bold shadow-sm">
-                          <SelectValue placeholder="All Banks" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Banks</SelectItem>
-                          {availableBanks.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Branch (Optional)</Label>
-                       <Select defaultValue="all" onValueChange={(v) => handleFilterChange("branch", v)}>
-                         <SelectTrigger className="h-11 bg-gray-50 border-none font-bold shadow-sm">
-                           <SelectValue placeholder="All Branches" />
-                         </SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="all">All Branches</SelectItem>
-                           {availableBranches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                         </SelectContent>
-                       </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">State Filter</Label>
-                       <Select defaultValue="all" onValueChange={(v) => handleFilterChange("state", v)}>
-                         <SelectTrigger className="h-11 bg-gray-50 border-none font-bold shadow-sm">
-                           <SelectValue placeholder="All States" />
-                         </SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="all">All States</SelectItem>
-                           {availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                         </SelectContent>
-                       </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Date From</Label>
-                       <Input 
-                        type="date" 
-                        className="h-11 bg-gray-50 border-none font-bold shadow-sm"
-                        value={filters.dateFrom}
-                        onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
-                       />
-                    </div>
- 
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Date To</Label>
-                       <Input 
-                        type="date" 
-                        className="h-11 bg-gray-50 border-none font-bold shadow-sm"
-                        value={filters.dateTo}
-                        onChange={(e) => handleFilterChange("dateTo", e.target.value)}
-                       />
+                 <CardContent className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <CategoricalDrop type="bank" options={availableBanks} label="Bank" value={filters.bank} onChange={handleFilterChange} />
+                      <CategoricalDrop type="branch" options={availableBranches} label="Branch" value={filters.branch} onChange={handleFilterChange} />
+                      <CategoricalDrop type="state" options={availableStates} label="State" value={filters.state} onChange={handleFilterChange} />
+                      <CategoricalDrop type="caseType" options={["FRESH", "FOLLOW UP", "RE-VISIT", "VALUATION", "LEGAL", "TECHNICAL"]} label="Type" value={filters.caseType} onChange={handleFilterChange} />
+                      <CategoricalDrop type="status" options={["COMPLETE", "PENDING", "HOLD", "CANCELLED"]} label="Status" value={filters.status} onChange={handleFilterChange} />
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input 
+                          type="date" 
+                          value={filters.dateFrom} 
+                          onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
+                          className="h-11 rounded-xl border-gray-200 bg-white dark:bg-zinc-900 font-bold text-[10px] uppercase shadow-sm focus:ring-primary/20 p-2"
+                        />
+                        <Input 
+                          type="date" 
+                          value={filters.dateTo} 
+                          onChange={(e) => handleFilterChange("dateTo", e.target.value)}
+                          className="h-11 rounded-xl border-gray-200 bg-white dark:bg-zinc-900 font-bold text-[10px] uppercase shadow-sm focus:ring-primary/20 p-2"
+                        />
+                      </div>
                     </div>
                  </CardContent>
                  <CardFooter className="bg-gray-50/30 p-4 border-t flex items-center justify-between">
@@ -366,6 +437,26 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                       </DialogDescription>
                     </DialogHeader>
 
+                    {editingRecord && (
+                      <EditRecordDialog 
+                        record={editingRecord}
+                        isOpen={!!editingRecord}
+                        onOpenChange={(open: boolean) => !open && setEditingRecord(null)}
+                        onSuccess={() => {
+                          fetchPreviewData(previewPage);
+                          // Also refresh counts if needed
+                        }}
+                      />
+                    )}
+
+                    {viewingRecord && (
+                      <ViewRecordDialog 
+                        record={viewingRecord}
+                        isOpen={!!viewingRecord}
+                        onOpenChange={(open: boolean) => !open && setViewingRecord(null)}
+                      />
+                    )}
+
                     <div className="p-0 overflow-x-auto overflow-y-auto max-h-[60vh]">
                        <Table className="min-w-[5000px] border-separate border-spacing-0">
                           <TableHeader className="bg-gray-50/80 sticky top-0 z-20">
@@ -397,8 +488,7 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                                 <TableHead className="w-[120px]">Conv.</TableHead>
                                 <TableHead className="w-[120px]">Addl Fee</TableHead>
                                 <TableHead className="w-[120px]">Amt Recd</TableHead>
-                                <TableHead className="w-[150px]">GST Number</TableHead>
-                                <TableHead className="w-[150px]">PAN Number</TableHead>
+                                <TableHead className="w-[150px] sticky right-0 bg-gray-50 z-30 text-right pr-8">Actions</TableHead>
                              </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -442,8 +532,12 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                                   <TableCell>₹{(record.conveyance || 0).toLocaleString()}</TableCell>
                                   <TableCell>₹{(record.additionalFee || 0).toLocaleString()}</TableCell>
                                   <TableCell>₹{(record.amountReceived || 0).toLocaleString()}</TableCell>
-                                  <TableCell className="font-mono">{record.gstNumber || "-"}</TableCell>
-                                  <TableCell className="font-mono">{record.panNumber || "-"}</TableCell>
+                                  <TableCell className="sticky right-0 bg-white group-hover:bg-primary/[0.01] z-10 text-right pr-8">
+                                     <div className="flex justify-end gap-1.5">
+                                        <Button variant="outline" size="sm" className="h-7 px-2 font-black text-[9px] uppercase tracking-tighter" onClick={() => setViewingRecord(record)}>VIEW</Button>
+                                        <Button variant="default" size="sm" className="h-7 px-2 font-black text-[9px] uppercase tracking-tighter" onClick={() => setEditingRecord(record)}>EDIT</Button>
+                                     </div>
+                                  </TableCell>
                                </TableRow>
                              ))}
                              {previewData.length === 0 && (
@@ -458,9 +552,37 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                     </div>
 
                     <DialogFooter className="p-6 bg-gray-50/50 border-t flex items-center justify-between">
-                       <div className="flex items-center gap-1 text-[11px] font-black text-gray-400 uppercase tracking-widest">
-                          Page <span className="text-primary">{previewPage}</span> of {Math.max(1, Math.ceil(previewTotal / 10))}
+                       <div className="flex items-center gap-6">
+                          <div className="flex items-center gap-1 text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                             Page <span className="text-primary">{previewPage}</span> of {Math.max(1, Math.ceil(previewTotal / 10))}
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                             <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-tighter">Jump to:</Label>
+                             <div className="relative">
+                                <Input 
+                                  className="h-8 w-16 text-center text-xs font-bold rounded-lg border-gray-200 bg-white"
+                                  placeholder="Page"
+                                  type="number"
+                                  value={goToPage}
+                                  onChange={(e) => setGoToPage(e.target.value)}
+                                  onKeyDown={(e) => {
+                                     if (e.key === 'Enter') {
+                                        const p = parseInt(goToPage);
+                                        const totalP = Math.ceil(previewTotal / 10);
+                                        if (!isNaN(p) && p > 0 && p <= totalP) {
+                                           fetchPreviewData(p);
+                                           setGoToPage("");
+                                        } else {
+                                           toast.error(`Invalid page. Max pages: ${totalP}`);
+                                        }
+                                     }
+                                  }}
+                                />
+                             </div>
+                          </div>
                        </div>
+                       
                        <div className="flex gap-2">
                           <Button 
                             variant="outline" 
@@ -545,6 +667,47 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
                             checked={options.groupByBranch}
                             onCheckedChange={(v) => setOptions({...options, groupByBranch: v})}
                           />
+                       </div>
+
+                       <div className="space-y-2 pt-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Annexure Fields (Section 2)</Label>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" className="w-full h-11 justify-between bg-gray-50 border-none font-bold text-xs">
+                                <span className="truncate">
+                                  {options.annexureFields.length} Fields Selected
+                                </span>
+                                <ListFilter className="h-4 w-4 ml-2 opacity-50" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-[280px] max-h-[300px] overflow-y-auto rounded-xl">
+                              <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest">Select Fields to Include</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              {ANNEXURE_FIELD_OPTIONS.map((field) => (
+                                <DropdownMenuCheckboxItem
+                                  key={field.value}
+                                  checked={options.annexureFields.includes(field.value)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setOptions(prev => ({
+                                        ...prev,
+                                        annexureFields: [...prev.annexureFields, field.value]
+                                      }));
+                                    } else {
+                                      setOptions(prev => ({
+                                        ...prev,
+                                        annexureFields: prev.annexureFields.filter(f => f !== field.value)
+                                      }));
+                                    }
+                                  }}
+                                  className="text-xs font-bold"
+                                >
+                                  {field.label}
+                                </DropdownMenuCheckboxItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <p className="text-[9px] text-muted-foreground font-semibold italic">These fields will appear in the detailed record table.</p>
                        </div>
                     </div>
                  </CardContent>
@@ -671,11 +834,4 @@ export function InvoiceGeneratorWizard({ companies, userId }: InvoiceGeneratorWi
       )}
     </div>
   );
-
-  function handleFilterChange(key: string, value: string) {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  }
 }
-
-import Link from "next/link";
-import { cn } from "@/lib/utils";

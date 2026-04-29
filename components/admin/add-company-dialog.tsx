@@ -76,8 +76,8 @@ export function AddCompanyDialog() {
         bankName: "", branchName: "", accountNumber: "", ifscCode: "" 
       });
       router.refresh();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to register company");
     } finally {
       setIsLoading(false);
     }
@@ -123,21 +123,8 @@ export function AddCompanyDialog() {
                 </div>
              </div>
 
-             {/* Registration Details */}
+             {/* Registration Details Group 1: PAN & CIN */}
              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">GST Registration *</Label>
-                  <div className="relative group">
-                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
-                    <Input 
-                      className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm uppercase font-mono tracking-widest"
-                      placeholder="27ABCDE1234F1Z5"
-                      required
-                      value={formData.gstNumber}
-                      onChange={(e) => setFormData({...formData, gstNumber: e.target.value})}
-                    />
-                  </div>
-                </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Income Tax PAN *</Label>
                   <div className="relative group">
@@ -151,9 +138,6 @@ export function AddCompanyDialog() {
                     />
                   </div>
                 </div>
-             </div>
-
-             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">CIN (Corporate No)</Label>
                   <div className="relative group">
@@ -166,6 +150,9 @@ export function AddCompanyDialog() {
                     />
                   </div>
                 </div>
+             </div>
+
+             {/* Registration Details Group 2: SAC/HSN & UDYAM */}
              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">SAC/HSN Code *</Label>
@@ -186,16 +173,16 @@ export function AddCompanyDialog() {
                     <CheckCircle2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
                     <Input 
                       className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm uppercase font-mono tracking-wider"
-                      placeholder="UDYAM-MH-01-1234567"
+                      placeholder="UDYAM-MH-01"
                       value={formData.udyamNumber}
                       onChange={(e) => setFormData({...formData, udyamNumber: e.target.value})}
                     />
                   </div>
                 </div>
              </div>
-             </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             {/* Location & GST: Address (Full Row) then State & GST (Split Row) */}
+             <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Registered Office Address *</Label>
                   <div className="relative group">
@@ -209,16 +196,33 @@ export function AddCompanyDialog() {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Company State *</Label>
-                  <Select value={formData.state} onValueChange={(v) => setFormData({...formData, state: v})}>
-                    <SelectTrigger className="h-11 bg-gray-50 border-none font-bold shadow-sm">
-                      <SelectValue placeholder="Select State" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INDIAN_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Company State *</Label>
+                      <Select value={formData.state} onValueChange={(v) => setFormData({...formData, state: v})}>
+                        <SelectTrigger className="h-11 bg-gray-50 border-none font-bold shadow-sm">
+                          <SelectValue placeholder="Select State" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INDIAN_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-gray-400">GST Registration *</Label>
+                      <div className="relative group">
+                        <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-orange-600 transition-colors" />
+                        <Input 
+                          className="pl-9 h-11 bg-gray-50 border-none font-bold shadow-sm uppercase font-mono tracking-widest"
+                          placeholder="27ABCDE1234F1Z5"
+                          required
+                          value={formData.gstNumber}
+                          onChange={(e) => setFormData({...formData, gstNumber: e.target.value})}
+                        />
+                      </div>
+                    </div>
                 </div>
              </div>
 

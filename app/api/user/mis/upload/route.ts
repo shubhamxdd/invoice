@@ -7,20 +7,44 @@ import fs from "fs/promises";
 
 // Helper to convert Excel serial date to string
 function formatExcelDate(value: any): string {
+  if (value === null || value === undefined || value === "") return "";
+  
   if (typeof value === "number" && value > 40000) {
     try {
-      // Excel dates are days since 1900-01-01
       const date = new Date((value - 25569) * 86400 * 1000);
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
       const day = date.getDate().toString().padStart(2, "0");
-      const month = months[date.getMonth()];
-      const year = date.getFullYear().toString().slice(-2);
-      return `${day}-${month}-${year}`;
+      return `${year}-${month}-${day}`;
     } catch (e) {
       return String(value);
     }
   }
-  return String(value || "");
+
+  // Handle strings like "16.03.2026", "16-03-2026", "16/03/2026"
+  const strVal = String(value).trim();
+  const dateParts = strVal.split(/[.\-/]/);
+  if (dateParts.length === 3) {
+    let day, month, year;
+    // Check for DD.MM.YYYY
+    if (dateParts[2].length === 4) {
+      day = dateParts[0].padStart(2, "0");
+      month = dateParts[1].padStart(2, "0");
+      year = dateParts[2];
+    } 
+    // Check for YYYY.MM.DD
+    else if (dateParts[0].length === 4) {
+      year = dateParts[0];
+      month = dateParts[1].padStart(2, "0");
+      day = dateParts[2].padStart(2, "0");
+    }
+
+    if (day && month && year) {
+      return `${year}-${month}-${day}`;
+    }
+  }
+
+  return strVal;
 }
 
 export async function POST(req: NextRequest) {
@@ -47,10 +71,13 @@ export async function POST(req: NextRequest) {
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     
-    // Clean data: skip completely empty rows and filter out rows with no meaningful data
-    const rawData = XLSX.utils.sheet_to_json(worksheet) as any[];
-    const data = rawData.filter(row => {
-      return Object.values(row).some(v => v !== null && v !== undefined && String(v).trim() !== "");
+    // Parse Excel as Array of Arrays to handle duplicate headers correctly
+    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+    if (rows.length < 2) return NextResponse.json({ error: "File has no data records" }, { status: 400 });
+
+    const fileHeaders = rows[0].map(h => String(h || "").trim());
+    const dataRows = rows.slice(1).filter(row => {
+      return row.some(v => v !== null && v !== undefined && String(v).trim() !== "");
     });
 
     // Ensure upload directory exists
@@ -59,9 +86,9 @@ export async function POST(req: NextRequest) {
     
     const fileName = `${Date.now()}_${file.name}`;
     const filePath = path.join(uploadDir, fileName);
-    await fs.writeFile(filePath, buffer);
+    await fs.writeFile(filePath, buffer); 
 
-    // Create MIS File record (initial record count)
+    // Create MIS File record
     const misFile = await prisma.misFile.create({
       data: {
         fileName: file.name,
@@ -72,16 +99,12 @@ export async function POST(req: NextRequest) {
         notes,
         status: "processing",
         uploadedBy: session.user.id!,
-        recordCount: data.length,
+        recordCount: dataRows.length,
       },
     });
 
-    // Extract Records using Mapping (HIGH PERFORMANCE REWRITE)
-    const chunkSize = 100;
-    let totalInserted = 0;
-    
-    // Step 1: Pre-calculate the mapping for all system fields ONCE
-    // This removes the need to search through headers for every single row
+    // Extract Records using INDEX-BASED Mapping
+    // This solves the "duplicate header" problem once and for all
     const targetFieldConfigs = [
       { key: "sNo", aliases: ["S. No", "S No", "SNo"] },
       { key: "eepacRefNo", aliases: ["EEPAC Reference No", "EEPAC Ref"] },
@@ -112,7 +135,7 @@ export async function POST(req: NextRequest) {
       { key: "followUpDate", aliases: ["Follow Up Date"] },
       { key: "specialFee", aliases: ["Special Fee"] },
       { key: "serviceLocation", aliases: ["Service Location"] },
-      { key: "branch1", aliases: ["Branch"] },
+      { key: "branch1", aliases: ["Branch (Alt)", "Secondary Branch", "Branch1"] },
       { key: "month", aliases: ["Month"] },
       { key: "nameOfBankFi", aliases: ["Name of Bank/FI"] },
       { key: "status", aliases: ["Status"] },
@@ -123,51 +146,56 @@ export async function POST(req: NextRequest) {
       { key: "total", aliases: ["Total"] },
       { key: "billSent", aliases: ["Bill Sent"] },
       { key: "amountReceived", aliases: ["Amount Received"] },
-      { key: "address1", aliases: ["Address"] },
+      { key: "address1", aliases: ["Address 2", "Address Alt", "Address1"] },
     ];
 
-    // Build the finalized mapping map (TargetKey -> Exact Header Name)
-    // This is the "Brain" of the extraction logic
-    const finalHeaderMap: Record<string, string> = {};
-    if (data.length > 0) {
-      const actualHeaders = Object.keys(data[0]);
-      targetFieldConfigs.forEach(target => {
-        // 1. Check user mapping first
-        const userProvided = userMapping[target.key];
-        if (userProvided && actualHeaders.includes(userProvided)) {
-           finalHeaderMap[target.key] = userProvided;
-           return;
+    const finalIndexMap: Record<string, number> = {};
+    targetFieldConfigs.forEach(target => {
+        // 1. User manual mapping by Column Index (highest priority)
+        const userProvidedIdx = userMapping[target.key];
+        if (userProvidedIdx !== undefined && userProvidedIdx !== "") {
+            const idx = parseInt(userProvidedIdx);
+            if (!isNaN(idx)) {
+                finalIndexMap[target.key] = idx;
+                return;
+            }
         }
 
-        // 2. Fuzzy match aliases (O(Aliases * Headers) - done only once)
+        // 2. Fuzzy match aliases (only if not manually mapped)
         for (const alias of target.aliases) {
-            if (actualHeaders.includes(alias)) {
-                finalHeaderMap[target.key] = alias;
-                break;
-            }
-            const found = actualHeaders.find(h => h.toLowerCase().trim() === alias.toLowerCase().trim());
-            if (found) {
-                finalHeaderMap[target.key] = found;
+            const foundIdx = fileHeaders.findIndex(h => h.toLowerCase() === alias.toLowerCase());
+            if (foundIdx !== -1) {
+                // If this index is already used by another field that was MANUALLY mapped, we skip it
+                // to avoid cross-contamination
+                finalIndexMap[target.key] = foundIdx;
                 break;
             }
         }
-      });
-    }
+    });
 
-    // Process chunks with the optimized map
-    for (let i = 0; i < data.length; i += chunkSize) {
-      const chunk = data.slice(i, i + chunkSize);
+    const chunkSize = 100;
+    let totalInserted = 0;
+    
+    // LOGGING: Let's log the first mapping to verify the brain is working
+    console.log("Extraction Brain Mapping:", JSON.stringify(finalIndexMap));
+
+    for (let i = 0; i < dataRows.length; i += chunkSize) {
+      const chunk = dataRows.slice(i, i + chunkSize);
       
       const recordsToInsert = chunk.map((row, index) => {
         const getRaw = (key: string) => {
-           const actualHeader = finalHeaderMap[key];
-           return actualHeader ? row[actualHeader] : "";
+           const colIdx = finalIndexMap[key];
+           return colIdx !== undefined ? row[colIdx] : "";
         };
 
-        const applicantName = String(getRaw("applicantName") || "");
-        const eepacRefNo = String(getRaw("eepacRefNo") || "");
+        const getNorm = (key: string) => {
+           const val = getRaw(key);
+           return val === null || val === undefined ? "" : String(val).trim().toUpperCase();
+        };
+
+        const applicantName = getNorm("applicantName");
+        const eepacRefNo = String(getRaw("eepacRefNo") || "").trim();
         
-        // Skip empty rows
         if (!applicantName && !eepacRefNo) return null;
 
         const rate = parseFloat(getRaw("rate") || "0") || 0;
@@ -178,43 +206,43 @@ export async function POST(req: NextRequest) {
           misFileId: misFile.id,
           sNo: parseInt(getRaw("sNo") || "0") || null,
           eepacRefNo: eepacRefNo,
-          appRefNo: String(getRaw("appRefNo") || ""),
-          bankRefNo: String(getRaw("bankRefNo") || ""),
-          additionalBankRef: String(getRaw("additionalBankRef") || ""),
+          appRefNo: String(getRaw("appRefNo") || "").trim(),
+          bankRefNo: String(getRaw("bankRefNo") || "").trim(),
+          additionalBankRef: String(getRaw("additionalBankRef") || "").trim(),
           applicantName: applicantName,
           address: String(getRaw("address") || ""),
-          city: String(getRaw("city") || ""),
-          state: String(getRaw("state") || ""),
-          pinCode: String(getRaw("pinCode") || ""),
-          caseType: String(getRaw("caseType") || ""),
-          bankName: String(getRaw("bankName") || ""),
-          customerContact: String(getRaw("customerContact") || ""),
-          branch: String(getRaw("branch") || ""),
-          rmContact: String(getRaw("rmContact") || ""),
+          city: getNorm("city"),
+          state: getNorm("state"),
+          pinCode: String(getRaw("pinCode") || "").trim(),
+          caseType: getNorm("caseType"),
+          bankName: getNorm("bankName"),
+          customerContact: String(getRaw("customerContact") || "").trim(),
+          branch: getNorm("branch"),
+          rmContact: String(getRaw("rmContact") || "").trim(),
           initiationDate: formatExcelDate(getRaw("initiationDate")),
-          time: String(getRaw("time") || ""),
-          initiatedBy: String(getRaw("initiatedBy") || ""),
-          visitDone: String(getRaw("visitDone") || ""),
+          time: String(getRaw("time") || "").trim(),
+          initiatedBy: getNorm("initiatedBy"),
+          visitDone: getNorm("visitDone"),
           visitDate: formatExcelDate(getRaw("visitDate")),
           reportSent: formatExcelDate(getRaw("reportSent")),
-          status1: String(getRaw("status1") || ""),
-          status2: String(getRaw("status2") || ""),
-          status3: String(getRaw("status3") || ""),
-          status4: String(getRaw("status4") || ""),
-          visitDoneBy: String(getRaw("visitDoneBy") || ""),
+          status1: getNorm("status1"),
+          status2: getNorm("status2"),
+          status3: getNorm("status3"),
+          status4: getNorm("status4"),
+          visitDoneBy: getNorm("visitDoneBy"),
           followUpDate: formatExcelDate(getRaw("followUpDate")),
           specialFee: parseFloat(getRaw("specialFee") || "0") || 0,
-          serviceLocation: String(getRaw("serviceLocation") || ""),
-          branch1: String(getRaw("branch1") || ""),
+          serviceLocation: getNorm("serviceLocation"),
+          branch1: getNorm("branch1"),
           month: formatExcelDate(getRaw("month")),
-          nameOfBankFi: String(getRaw("nameOfBankFi") || ""),
-          status: String(getRaw("status") || ""),
+          nameOfBankFi: getNorm("nameOfBankFi"),
+          status: getNorm("status"),
           rate: rate,
           distance: parseFloat(getRaw("distance") || "0") || 0,
           conveyance: conv,
           additionalFee: addl,
           total: parseFloat(getRaw("total") || "0") || (rate + conv + addl),
-          billSent: String(getRaw("billSent") || ""),
+          billSent: String(getRaw("billSent") || "").trim(),
           amountReceived: parseFloat(getRaw("amountReceived") || "0") || 0,
           address1: String(getRaw("address1") || ""),
           rowIndex: i + index,

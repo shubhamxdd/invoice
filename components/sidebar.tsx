@@ -24,9 +24,11 @@ import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+import { SessionUser } from "@/types";
+
 interface SidebarProps {
   role: "admin" | "user";
-  user: any;
+  user: SessionUser | null | undefined;
 }
 
 const adminLinks = [
@@ -68,7 +70,7 @@ export function Sidebar({ role, user }: SidebarProps) {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
                 K
               </div>
-              <span className="text-xl">KEC Invoice</span>
+              <span className="text-xl">Finvoice</span>
             </div>
           )}
           {isCollapsed && (

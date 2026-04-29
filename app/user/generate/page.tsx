@@ -1,9 +1,9 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { FileCheck, Building2, Landmark, Filter, Settings, Download, CheckCircle2, ChevronRight, Layers, FileBadge, ArrowLeft, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { FileBadge } from "lucide-react";
 import { InvoiceGeneratorWizard } from "@/components/user/invoice-generator-wizard";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export default async function GenerateInvoicesPage() {
   const session = await auth();
@@ -36,14 +36,4 @@ export default async function GenerateInvoicesPage() {
       <InvoiceGeneratorWizard companies={companies} userId={session?.user?.id} />
     </div>
   );
-}
-
-const Badge = ({ children, variant, className }: any) => (
-  <div className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", className)}>
-    {children}
-  </div>
-);
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(" ");
 }
